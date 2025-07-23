@@ -20,7 +20,8 @@
 <section id="loginPage" class="flex flex-col items-center justify-center min-h-screen space-y-6">
   <div class="w-full max-w-sm bg-white rounded-xl shadow-md p-8 space-y-6">
     <div class="text-center space-y-2">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/Ems_Logo.png" alt="EMS Logo" class="mx-auto w-20">
+      <!-- شعار محلي -->
+      <img src="Ems.png" alt="EMS Logo" class="mx-auto w-20">
       <h1 id="loginTitle" class="text-2xl font-bold text-gray-800">تسجيل الدخول</h1>
       <p id="singleUserNote" class="text-sm text-gray-500">اسم مستخدم واحد فقط</p>
     </div>
@@ -49,13 +50,14 @@
   </div>
 </section>
 
-<!-- ░░ صفحة التطبيق (تُخفى إلى أن يُسجَّل الدخول) ░░ -->
+<!-- ░░ صفحة التطبيق ░░ -->
 <section id="appPage" class="hidden">
   <div class="max-w-4xl mx-auto p-6 space-y-6">
 
     <!-- العنوان -->
     <div class="text-center">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/9/94/Ems_Logo.png" alt="EMS Logo" class="mx-auto w-24 mb-4">
+      <!-- شعار محلي -->
+      <img src="Ems.png" alt="EMS Logo" class="mx-auto w-24 mb-4">
       <h1 id="appTitle" class="text-3xl font-bold text-gray-800">سجل حضور لاعبي EMS</h1>
     </div>
 
@@ -72,12 +74,12 @@
       </button>
     </div>
 
-    <!-- الحاوية الرئيسية للاعبين -->
+    <!-- الحاوية الرئيسية -->
     <div id="playersContainer" class="space-y-6"></div>
   </div>
 </section>
 
-<!-- ░░ الترجمات واللغة ░░ -->
+<!-- ░░ الترجمات ░░ -->
 <script>
 const translations = {
   ar: {
@@ -98,7 +100,7 @@ const translations = {
     chooseSubscription: "اختر نوع الاشتراك",
     subscriptionTrial: "1 يوم واحد - 50 شيكل (تجربة)",
     subscription15: "15 تمرين - 1500 شيكل",
-    subscription35: "35 تمرين - 3500 شيكل",
+    subscription35: "35 تمرين - 3000 شيكل",
     subscription50: "50 تمرين - 4000 شيكل",
     subscriptionOther: "أخرى (أدخل يدويًا)",
     otherDetailsPlaceholder: "أدخل تفاصيل الاشتراك",
@@ -132,7 +134,7 @@ const translations = {
     chooseSubscription: "בחר סוג מנוי",
     subscriptionTrial: "יום אחד - 50 ₪ (ניסיון)",
     subscription15: "15 אימונים - 1500 ₪",
-    subscription35: "35 אימונים - 3500 ₪",
+    subscription35: "35 אימונים - 3000 ₪",
     subscription50: "50 אימונים - 4000 ₪",
     subscriptionOther: "אחר (הזן ידנית)",
     otherDetailsPlaceholder: "הזן פרטי מנוי",
@@ -160,7 +162,7 @@ function t(k){ return translations[currentLang][k] || k; }
 document.documentElement.lang = currentLang;
 document.documentElement.dir  = "rtl";
 
-/* تمييز زر اللغة الحالي */
+/* تمييز زر اللغة */
 function highlightLangButtons(){
   document.querySelectorAll(".lang-btn").forEach(btn=>{
     const active = btn.dataset.lang === currentLang;
@@ -168,8 +170,6 @@ function highlightLangButtons(){
     btn.classList.toggle("text-white", active);
   });
 }
-
-/* تبديل اللغة */
 document.addEventListener("DOMContentLoaded", ()=>{
   document.querySelectorAll(".lang-btn").forEach(btn=>{
     btn.addEventListener("click", ()=>{
@@ -187,37 +187,27 @@ document.addEventListener("DOMContentLoaded", ()=>{
 <!-- ░░ منطق تسجيل الدخول ░░ -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-
-  /* عناصر أساسية */
   const loginPage = document.getElementById("loginPage");
   const appPage   = document.getElementById("appPage");
-  const loginForm = document.getElementById("loginForm");
   const loginErr  = document.getElementById("loginError");
 
-  /* ترجمة واجهة تسجيل الدخول */
-  function updateLoginTexts(){
-    document.getElementById("loginTitle").textContent    = t("loginTitle");
-    document.getElementById("singleUserNote").textContent= t("singleUserNote");
-    document.getElementById("usernameLabel").textContent = t("usernameLabel");
-    document.getElementById("passwordLabel").textContent = t("passwordLabel");
-    document.getElementById("loginButton").textContent   = t("loginButton");
+  (function updateLoginTexts(){
+    ["loginTitle","singleUserNote","usernameLabel","passwordLabel","loginButton"]
+      .forEach(id=>document.getElementById(id).textContent = t(id));
     loginErr.textContent = t("loginError");
-  }
-  updateLoginTexts();
+  })();
 
-  /* إذا كان مسجَّل دخول سابقًا */
   if (sessionStorage.getItem("loggedIn") === "true") {
     loginPage.classList.add("hidden");
     appPage.classList.remove("hidden");
-    updateAppTexts();               // ← تعريب التطبيق
+    updateAppTexts();
   }
 
-  /* التحقق من بيانات الدخول */
-  loginForm.addEventListener("submit", (e) => {
+  document.getElementById("loginForm").addEventListener("submit", e=>{
     e.preventDefault();
     const u = document.getElementById("username").value.trim();
     const p = document.getElementById("password").value;
-    if (u === "leo" && p === "m22558800") {
+    if (u==="leo" && p==="m22558800"){
       sessionStorage.setItem("loggedIn","true");
       loginErr.classList.add("hidden");
       loginPage.classList.add("hidden");
@@ -230,54 +220,47 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
-<!-- ░░ التطبيق: سجل اللاعبين ░░ -->
+<!-- ░░ التطبيق ░░ -->
 <script>
-/* مفاتيح التخزين */
 const STORAGE_KEY = "emsPlayers";
-
-/* عناصر ثابتة */
 const playersContainer = document.getElementById("playersContainer");
-const searchInput      = document.getElementById("searchInput");
-const addBtn           = document.getElementById("addBtn");
-const appTitle         = document.getElementById("appTitle");
+const searchInput = document.getElementById("searchInput");
+const addBtn      = document.getElementById("addBtn");
+const appTitle    = document.getElementById("appTitle");
 
-/* نصوص ثابتة للتطبيق */
 function updateAppTexts(){
   appTitle.textContent             = t("appTitle");
   searchInput.placeholder          = t("searchPlaceholder");
   addBtn.textContent               = t("addPlayerButton");
 }
 
-/* --- أدوات مساعدة --- */
-function today(){ return new Date().toISOString().split("T")[0]; }
+/* أدوات مساعدة */
+const today = () => new Date().toISOString().split("T")[0];
 function formatDateWithDay(d){
   const dt = new Date(d);
   return `${d} - ${days[currentLang][dt.getDay()]}`;
 }
 
-/* تحميل اللاعبين */
+/* التخزين */
 function loadFromStorage(){
-  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];}
   catch{ return []; }
 }
 function saveToStorage(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
 }
 
-/* ترحيل قيم الاشتراك القديمة إلى الرموز الجديدة */
-function migrateSubscriptionType(v){
-  if (["1 يوم - 50 شيكل تجربة","יום אחד - 50 ₪ (ניסיון)","trial"].includes(v)) return "trial";
-  if (["15 تمرين - 1500 شيكل","15 אימונים - 1500 ₪","15"].includes(v))       return "15";
-  if (["35 تمرين - 3500 شيكل","35 אימונים - 3500 ₪","35"].includes(v))       return "35";
-  if (["50 تمرين - 4000 شيكل","50 אימונים - 4000 ₪","50"].includes(v))       return "50";
-  return v;
+/* ترحيل الاشتراكات القديمة */
+function migrate(v){
+  if (["35 تمرين - 3500 شيكل","35 אימונים - 3500 ₪","35 تمرين - 3000 شيكل","35 אימונים - 3000 ₪"].includes(v)) return "35";
+  return v==="1 يوم - 50 شيكل تجربة"||v==="יום אחד - 50 ₪ (ניסיון)"?"trial":v;
 }
 
-/* الحالة العامّة */
+/* الحالة */
 let players = loadFromStorage();
-players.forEach(p=>{ p.subscriptionType = migrateSubscriptionType(p.subscriptionType||""); });
+players.forEach(p=>p.subscriptionType = migrate(p.subscriptionType||""));
 
-/* إنشاء بطاقة لاعب */
+/* إنشاء بطاقة */
 function renderPlayerCard(player){
   const card = document.createElement("div");
   card.className = "bg-white p-6 rounded-xl shadow-md space-y-4 border border-gray-200";
@@ -331,7 +314,6 @@ function renderPlayerCard(player){
     </div>
   `;
 
-  /* مراجع */
   const nameInput   = card.querySelector(".player-name");
   const subSelect   = card.querySelector(".subscription-select");
   const subOtherBox = card.querySelector(".subscription-other");
@@ -340,55 +322,39 @@ function renderPlayerCard(player){
   const timeInput   = card.querySelector(".time-input");
   const datesUL     = card.querySelector(".dates-list");
 
-  subSelect.value = player.subscriptionType || "";
+  subSelect.value = player.subscriptionType||"";
 
-  /* حضور تلقائي لخيار اليوم الواحد */
-  function ensureTrialAttendance(){
-    if (subSelect.value === "trial" && !player.dates.some(d=>d.trial)){
-      const trialDate = {
-        id: Date.now(),
-        date: today(),
-        time: "",
-        came: true,
-        trial: true
-      };
-      player.dates.push(trialDate);
-      appendDateLi(trialDate, datesUL, player);
+  /* حضور تلقائي للتجربة */
+  function ensureTrial(){
+    if (subSelect.value==="trial" && !player.dates.some(d=>d.trial)){
+      const trial = { id:Date.now(), date:today(), time:"", came:true, trial:true };
+      player.dates.push(trial);
+      appendDateLi(trial, datesUL, player);
       saveToStorage();
     }
   }
-  ensureTrialAttendance();
+  ensureTrial();
 
-  /* تحميل التواريخ السابقة */
-  if (player.dates && player.dates.length){
-    player.dates.forEach(d=> appendDateLi(d, datesUL, player));
-  }
+  player.dates?.forEach(d=>appendDateLi(d, datesUL, player));
 
-  /* أحداث */
-  nameInput.addEventListener("input", ()=>{
-    player.name = nameInput.value.trim();
-    saveToStorage();
-  });
+  nameInput.addEventListener("input", ()=>{ player.name=nameInput.value.trim(); saveToStorage(); });
 
   subSelect.addEventListener("change", ()=>{
     player.subscriptionType = subSelect.value;
     subOtherBox.classList.toggle("hidden", subSelect.value!=="other");
-    ensureTrialAttendance();
+    ensureTrial();
     saveToStorage();
   });
 
-  subOtherBox.addEventListener("input", ()=>{
-    player.subscriptionOther = subOtherBox.value.trim();
-    saveToStorage();
-  });
+  subOtherBox.addEventListener("input", ()=>{ player.subscriptionOther=subOtherBox.value.trim(); saveToStorage(); });
 
   addDateBtn.addEventListener("click", ()=>{
     if (!dateInput.value || !timeInput.value) return;
-    const newDate = { id:Date.now(), date:dateInput.value, time:timeInput.value, came:false };
-    player.dates.push(newDate);
-    appendDateLi(newDate, datesUL, player);
-    dateInput.value = today();
-    timeInput.value = "";
+    const d = { id:Date.now(), date:dateInput.value, time:timeInput.value, came:false };
+    player.dates.push(d);
+    appendDateLi(d, datesUL, player);
+    dateInput.value=today();
+    timeInput.value="";
     saveToStorage();
   });
 
@@ -403,7 +369,7 @@ function renderPlayerCard(player){
   playersContainer.appendChild(card);
 }
 
-/* عنصر تمرين */
+/* عنصر تاريخ */
 function appendDateLi(dateObj, ul, playerRef){
   const li = document.createElement("li");
   li.className = "flex justify-between items-center bg-gray-100 rounded-md px-3 py-2";
@@ -419,10 +385,10 @@ function appendDateLi(dateObj, ul, playerRef){
 
   const statusBtn = document.createElement("button");
   statusBtn.className = "text-sm hover:underline";
-  toggleStatusAppearance(statusBtn, dateObj.came);
+  toggleStatus(statusBtn, dateObj.came);
   statusBtn.addEventListener("click", ()=>{
-    dateObj.came = !dateObj.came;
-    toggleStatusAppearance(statusBtn, dateObj.came);
+    dateObj.came=!dateObj.came;
+    toggleStatus(statusBtn, dateObj.came);
     saveToStorage();
   });
 
@@ -442,18 +408,16 @@ function appendDateLi(dateObj, ul, playerRef){
   ul.appendChild(li);
 }
 
-function toggleStatusAppearance(btn, came){
+function toggleStatus(btn, came){
   btn.textContent = came ? t("came") : t("notCame");
   btn.classList.toggle("text-green-600", came);
   btn.classList.toggle("text-red-500", !came);
 }
 
-/* إضافة لاعب جديد */
+/* إضافة لاعب */
 addBtn.addEventListener("click", ()=>{
-  const newP = { id:Date.now(), name:"", subscriptionType:"", subscriptionOther:"", dates:[] };
-  players.push(newP);
-  saveToStorage();
-  renderPlayerCard(newP);
+  const p = { id:Date.now(), name:"", subscriptionType:"", subscriptionOther:"", dates:[] };
+  players.push(p); saveToStorage(); renderPlayerCard(p);
 });
 
 /* البحث */
