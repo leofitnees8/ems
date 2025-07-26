@@ -155,7 +155,7 @@
         ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
       ` + player.subscriptions.map((sub, i) => `
         <li class="flex justify-between items-center">
-          <span>${sub.date} - ${sub.type} تمرين</span>
+          <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
         </li>
       `).join("");
 
