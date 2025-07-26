@@ -33,6 +33,7 @@
       </div>
     </div>
 
+    <!-- إضافة تمرين سريع -->
     <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
       <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين لليوم</h3>
       <div class="grid md:grid-cols-4 gap-2">
@@ -56,6 +57,7 @@
       </div>
     </div>
 
+    <!-- قائمة تمارين اليوم -->
     <div id="todayList" class="space-y-4 pt-6"></div>
   </div>
 
@@ -68,10 +70,11 @@
     const today = new Date();
     dateInput.value = today.toISOString().split("T")[0];
 
+    /* ---- أزرار اختيار اليوم ---- */
     document.querySelectorAll(".day-filter").forEach(btn => {
       btn.addEventListener("click", () => {
         const targetDay = parseInt(btn.dataset.day);
-        const d = new Date();
+        const d   = new Date();
         const diff = (targetDay - d.getDay() + 7) % 7;
         d.setDate(d.getDate() + diff);
         dateInput.value = d.toISOString().split("T")[0];
@@ -82,22 +85,25 @@
 
     dateInput.addEventListener("change", renderByDate);
 
+    /* -------- عرض التمارين حسب التاريخ -------- */
     async function renderByDate() {
-      const selected = dateInput.value;
+      const selected   = dateInput.value;
       const typeFilter = document.getElementById("typeFilter").value;
+
       const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const players  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const sessions = [];
       players.forEach(player => {
-        (player.attendance || []).forEach(att => {
+        (player.attendance || []).forEach((att, idx) => {
           if (att.date === selected && (!typeFilter || att.type === typeFilter)) {
             sessions.push({
-              name: player.name,
-              id: player.id,
-              time: att.time,
-              type: att.type,
-              came: att.came
+              name     : player.name,
+              playerId : player.id,
+              attIndex : idx,
+              time     : att.time,
+              type     : att.type,
+              came     : att.came
             });
           }
         });
@@ -108,27 +114,31 @@
       container.innerHTML = sessions.length === 0
         ? '<p class="text-gray-600">لا توجد تمارين في هذا اليوم.</p>'
         : sessions.map(item => `
-          <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center">
-            <div>
-              <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
-              <p class="text-sm text-gray-600">📅 ${formatDate(dateInput.value)} | ⏰ ${item.time} | 🏷️ ${item.type}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-${item.came ? 'green' : 'red'}-600 text-sm">${item.came ? '✅ أتى' : '❌ لم يأتِ'}</span>
-            </div>
-          </div>`).join("");
+            <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center gap-3">
+              <div>
+                <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
+                <p class="text-sm text-gray-600">📅 ${formatDate(dateInput.value)} | ⏰ ${item.time} | 🏷️ ${item.type}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-${item.came ? 'green' : 'red'}-600 text-sm">${item.came ? '✅ أتى' : '❌ لم يأتِ'}</span>
+                <button onclick="toggleCame('${item.playerId}', ${item.attIndex})" class="text-blue-600 hover:underline text-sm">تبديل</button>
+                <button onclick="deleteSession('${item.playerId}', ${item.attIndex})" class="text-red-600 hover:underline text-sm">حذف</button>
+              </div>
+            </div>`).join("");
     }
 
     function formatDate(dateString) {
       const date = new Date(dateString);
-      const day = date.toLocaleDateString("ar-EG", { weekday: "long" });
+      const day  = date.toLocaleDateString("ar-EG", { weekday: "long" });
       return `${day} - ${dateString}`;
     }
 
+    /* -------- قوائم اللاعبين في مربع الإضافة -------- */
     async function initPlayerOptions() {
-      const select = document.getElementById("playerSelect");
+      const select   = document.getElementById("playerSelect");
       const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const players  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
       select.innerHTML = "";
       players.forEach(p => {
         const opt = document.createElement("option");
@@ -141,37 +151,40 @@
     document.getElementById("nameSearch").addEventListener("input", filterPlayerOptions);
 
     async function filterPlayerOptions() {
-      const query = document.getElementById("nameSearch").value.toLowerCase();
-      const select = document.getElementById("playerSelect");
+      const query    = document.getElementById("nameSearch").value.toLowerCase();
+      const select   = document.getElementById("playerSelect");
       const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const players  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
       select.innerHTML = "";
       players.forEach(p => {
         if (p.name.toLowerCase().includes(query)) {
-          const opt = document.createElement("option");
-          opt.value = p.id;
+          const opt   = document.createElement("option");
+          opt.value   = p.id;
           opt.textContent = p.name;
           select.appendChild(opt);
         }
       });
     }
 
+    /* -------- إضافة تمرين سريع -------- */
     document.getElementById("saveBtn").addEventListener("click", async () => {
-      const id = document.getElementById("playerSelect").value;
+      const id   = document.getElementById("playerSelect").value;
       const type = document.getElementById("quickType").value;
       const time = document.getElementById("quickTime").value;
       const came = document.getElementById("quickCame").checked;
       const date = document.getElementById("datePicker").value;
+
       if (!id || !type || !time) return alert("يرجى تعبئة جميع الحقول");
 
       const docRef = doc(db, "players", id);
-      const snap = await getDoc(docRef);
+      const snap   = await getDoc(docRef);
       if (!snap.exists()) return alert("اللاعب غير موجود");
       const player = snap.data();
 
       player.attendance = player.attendance || [];
       player.attendance.push({
-        day: new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
+        day : new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
         date,
         time,
         type,
@@ -183,6 +196,44 @@
       alert("✅ تم إضافة التمرين للاعب");
     });
 
+    /* -------- تبديل حالة أتى / لم يأتِ -------- */
+    async function toggleCame(playerId, attIdx) {
+      try {
+        const ref  = doc(db, "players", playerId);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+
+        const data = snap.data();
+        data.attendance[attIdx].came = !data.attendance[attIdx].came;
+        await updateDoc(ref, { attendance: data.attendance });
+        renderByDate();
+      } catch (e) {
+        console.error(e);
+        alert("تعذر تبديل الحضور");
+      }
+    }
+    window.toggleCame = toggleCame;
+
+    /* -------- حذف جلسة تمرين -------- */
+    async function deleteSession(playerId, attIdx) {
+      if (!confirm("هل أنت متأكد من حذف هذا التمرين؟")) return;
+      try {
+        const ref  = doc(db, "players", playerId);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) return;
+
+        const data = snap.data();
+        data.attendance.splice(attIdx, 1);
+        await updateDoc(ref, { attendance: data.attendance });
+        renderByDate();
+      } catch (e) {
+        console.error(e);
+        alert("تعذر حذف التمرين");
+      }
+    }
+    window.deleteSession = deleteSession;
+
+    /* =========== تحميل مبدئي =========== */
     renderByDate();
     initPlayerOptions();
   </script>
