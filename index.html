@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+  if (localStorage.getItem("loggedIn") !== "true") {
+    window.location.href = "login.html";
+  }
+  </script>
+
   <meta charset="UTF-8">
   <title>سجل الحضور</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="firebase.js"></script>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-xl mx-auto mb-4 text-center">
-    <img src="ems.png" alt="شعار EMS" class="w-24 mx-auto mb-2 drop-shadow">
-    <h2 class="text-xl font-bold text-blue-800">نظام إدارة التمارين EMS</h2>
-  </div>
 
+<body class="bg-gray-100 p-6">
   <button onclick="logout()" class="text-sm text-gray-500 underline hover:text-black">🔓 تسجيل خروج</button>
 
   <div class="max-w-xl mx-auto bg-white p-6 rounded-xl shadow space-y-4">
@@ -25,7 +25,7 @@
     </div>
 
     <div class="flex flex-col md:flex-row justify-between items-center gap-2 mt-2">
-      <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب..." class="w-full md:w-2/3 p-2 border rounded">
+      <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب..." class="w-full md:w-2/3 p-2 border rounded" oninput="renderPlayers()">
       <select id="langSelect" onchange="setLanguage()" class="w-full md:w-1/3 p-2 border rounded">
         <option value="ar">🇸🇦 عربي</option>
         <option value="he">🇮🇱 עברית</option>
@@ -51,28 +51,21 @@
     <ul id="playersList" class="space-y-2"></ul>
   </div>
 
-  <script type="module">
-    import { db } from './firebase.js';
-    import { collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+  <script>
     const nameInput = document.getElementById("playerName");
     const phoneInput = document.getElementById("playerPhone");
     const subSelect = document.getElementById("playerSub");
-    const heightInput = document.getElementById("playerHeight");
-    const weightInput = document.getElementById("playerWeight");
-    const ageInput = document.getElementById("playerAge");
     const addBtn = document.getElementById("addPlayer");
     const list = document.getElementById("playersList");
-    const searchInput = document.getElementById("searchInput");
 
-    async function fetchPlayers() {
-      const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => doc.data());
-      renderPlayers(players);
+    let players = JSON.parse(localStorage.getItem("players") || "[]");
+
+    function savePlayers() {
+      localStorage.setItem("players", JSON.stringify(players));
     }
 
-    function renderPlayers(players) {
-      const query = searchInput.value.toLowerCase();
+    function renderPlayers() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
       list.innerHTML = "";
       players.forEach(player => {
         if (!player.name.toLowerCase().includes(query)) return;
@@ -84,34 +77,43 @@
               👤 ${player.name || "بدون اسم"}
             </a>
             ${player.phone ? `<a href="https://wa.me/${formatWhatsApp(player.phone)}" target="_blank" class="text-green-600 text-sm hover:underline mt-1">📱 واتساب</a>` : ""}
+            <span class="text-sm text-gray-700">📏 الطول: ${player.height || "-"} سم</span>
+            <span class="text-sm text-gray-700">⚖️ الوزن: ${player.weight || "-"} كغ</span>
+            <span class="text-sm text-gray-700">🎂 العمر: ${player.age || "-"}</span>
           </div>
-          <button onclick="deletePlayer('${player.id}')" class="text-red-600 hover:text-red-800 text-sm">🗑️ حذف</button>
+          <button onclick="archivePlayer(${player.id})" class="text-red-600 hover:text-red-800 text-sm">🗑️ حذف</button>
         `;
         list.appendChild(li);
       });
     }
 
-    async function deletePlayer(id) {
-      if (!confirm("هل تريد حذف اللاعب؟")) return;
-      await deleteDoc(doc(db, "players", id));
-      fetchPlayers();
+    function archivePlayer(id) {
+      const player = players.find(p => p.id === id);
+      if (!player) return;
+      if (confirm(`هل تريد أرشفة اللاعب: ${player.name || "بدون اسم"}؟`)) {
+        const archived = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
+        archived.push(player);
+        localStorage.setItem("archivedPlayers", JSON.stringify(archived));
+        players = players.filter(p => p.id !== id);
+        savePlayers();
+        renderPlayers();
+      }
     }
 
-    addBtn.addEventListener("click", async () => {
+    addBtn.addEventListener("click", () => {
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
       const sub = subSelect.value;
-      const height = heightInput.value.trim();
-      const weight = weightInput.value.trim();
-      const age = ageInput.value.trim();
+      const height = document.getElementById("playerHeight").value.trim();
+      const weight = document.getElementById("playerWeight").value.trim();
+      const age = document.getElementById("playerAge").value.trim();
 
       if (!name) {
         alert("يجب إدخال اسم اللاعب.");
         return;
       }
-
       const newPlayer = {
-        id: Date.now().toString(),
+        id: Date.now(),
         name,
         phone,
         subscription: sub,
@@ -120,21 +122,15 @@
         age,
         attendance: []
       };
-
-      try {
-        await setDoc(doc(db, "players", newPlayer.id), newPlayer);
-        alert("✅ تم إضافة اللاعب بنجاح");
-        nameInput.value = "";
-        phoneInput.value = "";
-        subSelect.value = "";
-        heightInput.value = "";
-        weightInput.value = "";
-        ageInput.value = "";
-        fetchPlayers();
-      } catch (err) {
-        alert("❌ فشل في إضافة اللاعب");
-        console.error(err);
-      }
+      players.push(newPlayer);
+      savePlayers();
+      renderPlayers();
+      nameInput.value = "";
+      phoneInput.value = "";
+      subSelect.value = "";
+      document.getElementById("playerHeight").value = "";
+      document.getElementById("playerWeight").value = "";
+      document.getElementById("playerAge").value = "";
     });
 
     function formatWhatsApp(phone) {
@@ -158,13 +154,15 @@
       const savedLang = localStorage.getItem("siteLang") || "ar";
       document.getElementById("langSelect").value = savedLang;
       setLanguage();
-      fetchPlayers();
     });
 
     function logout() {
       localStorage.removeItem("loggedIn");
       window.location.href = "login.html";
     }
+
+    renderPlayers();
+    window.archivePlayer = archivePlayer;
   </script>
 </body>
 </html>
