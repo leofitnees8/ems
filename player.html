@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -119,10 +118,14 @@
       dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
       btn.classList.add("bg-blue-500", "text-white");
 
-      const dayMap = {'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6};
+      const dayMap = {
+        'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2,
+        'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6
+      };
       const today = new Date();
+      const todayIndex = today.getDay();
       const targetIndex = dayMap[selectedDay];
-      let diff = (targetIndex - today.getDay() + 7) % 7;
+      let diff = (targetIndex - todayIndex + 7) % 7;
       if (diff < 2) diff += 7;
       const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
       dateInput.value = targetDate.toISOString().split("T")[0];
@@ -152,19 +155,13 @@
     `;
 
     subsList.innerHTML = `
-      ${player.subscription ? `
-        <li class="flex justify-between items-center text-gray-700">
-          <span>📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</span>
-          <button onclick="deletePrimarySubscription()" class="text-red-600 hover:underline text-sm">🗑️ حذف</button>
-        </li>` : ""
-    }
-    ${player.subscriptions.map((sub, i) => `
+      ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
+    ` + player.subscriptions.map((sub, i) => `
       <li class="flex justify-between items-center">
-        <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
+        <span>${sub.date} - ${sub.type} تمرين</span>
         <button onclick="deleteSubscription(${i})" class="text-red-500 text-sm hover:underline">🗑️ حذف</button>
       </li>
-    `).join("")}
-    `;
+    `).join("");
 
     updateProgress();
   }
@@ -176,12 +173,12 @@
   }
 
   function addSubscription() {
-    const choice = prompt("اختر نوع الاشتراك:
-15 - 1500 شيكل
-35 - 3000 شيكل
-50 - 4000 شيكل");
+    const choice = prompt("اختر نوع الاشتراك:\n15 - 1500 شيكل\n35 - 3000 شيكل\n50 - 4000 شيكل");
     if (["15", "35", "50"].includes(choice)) {
-      player.subscriptions.push({ type: choice, date: new Date().toISOString().split("T")[0] });
+      player.subscriptions.push({
+        type: choice,
+        date: new Date().toISOString().split("T")[0]
+      });
       save();
       showInfo();
     } else {
@@ -192,14 +189,6 @@
   function deleteSubscription(index) {
     if (confirm("هل تريد حذف هذا الاشتراك؟")) {
       player.subscriptions.splice(index, 1);
-      save();
-      showInfo();
-    }
-  }
-
-  function deletePrimarySubscription() {
-    if (confirm("هل تريد حذف الاشتراك الأولي؟")) {
-      delete player.subscription;
       save();
       showInfo();
     }
