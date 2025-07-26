@@ -156,6 +156,7 @@
       ` + player.subscriptions.map((sub, i) => `
         <li class="flex justify-between items-center">
           <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
+          <button onclick="deleteSubscription(${i})" class="text-red-600 hover:underline text-sm">🗑️ حذف</button>
         </li>
       `).join("");
 
@@ -201,6 +202,13 @@
       if (!confirm("هل أنت متأكد من حذف هذا التمرين؟")) return;
       player.attendance.splice(index, 1);
       await updateDoc(playerRef, { attendance: player.attendance });
+      showInfo();
+    };
+
+    window.deleteSubscription = async function(index) {
+      if (!confirm("هل أنت متأكد أنك تريد حذف هذا الاشتراك؟")) return;
+      player.subscriptions.splice(index, 1);
+      await updateDoc(playerRef, { subscriptions: player.subscriptions });
       showInfo();
     };
 
