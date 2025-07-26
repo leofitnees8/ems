@@ -121,14 +121,20 @@
         attendance: []
       };
 
-      await setDoc(doc(db, "players", newPlayer.id), newPlayer);
-      nameInput.value = "";
-      phoneInput.value = "";
-      subSelect.value = "";
-      heightInput.value = "";
-      weightInput.value = "";
-      ageInput.value = "";
-      fetchPlayers();
+      try {
+        await setDoc(doc(db, "players", newPlayer.id), newPlayer);
+        alert("✅ تم إضافة اللاعب بنجاح");
+        nameInput.value = "";
+        phoneInput.value = "";
+        subSelect.value = "";
+        heightInput.value = "";
+        weightInput.value = "";
+        ageInput.value = "";
+        fetchPlayers();
+      } catch (err) {
+        alert("❌ فشل في إضافة اللاعب");
+        console.error(err);
+      }
     });
 
     function formatWhatsApp(phone) {
