@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>📜 היסטוריה - أرشيف اللاعبين</title>
+  <title>📌 היסטוריה - أرشيف اللاعبين</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script type="module" src="firebase.js"></script>
@@ -10,12 +10,11 @@
 <body class="bg-gray-100 p-6">
   <div class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
     <div class="flex justify-between items-center">
-      <h1 class="text-3xl font-bold text-blue-800">📜 היסטוריה - أرشيف اللاعبين</h1>
+      <h1 class="text-3xl font-bold text-blue-800">📌 היסטוריה - أرشيف اللاعبين</h1>
       <a href="index.html" class="text-blue-600 hover:underline">⬅️ العودة</a>
     </div>
 
     <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب مؤرشف..." class="w-full p-2 border rounded">
-
     <div id="archivedList" class="space-y-4"></div>
   </div>
 
@@ -26,10 +25,12 @@
     const archivedList = document.getElementById("archivedList");
     const searchInput = document.getElementById("searchInput");
 
+    let allPlayers = [];
+
     async function fetchArchivedPlayers() {
       const snapshot = await getDocs(collection(db, "archivedPlayers"));
-      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      renderArchived(players);
+      allPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderArchived(allPlayers);
     }
 
     function renderArchived(players) {
@@ -90,7 +91,7 @@
     }
 
     searchInput.addEventListener("input", () => {
-      fetchArchivedPlayers();
+      renderArchived(allPlayers);
     });
 
     fetchArchivedPlayers();
