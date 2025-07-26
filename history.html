@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <script type="module" src="firebase.js"></script>
-
   <meta charset="UTF-8">
   <title>📜 היסטוריה - أرشيف اللاعبين</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="firebase.js"></script>
 </head>
 <body class="bg-gray-100 p-6">
   <div class="max-w-5xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
@@ -15,22 +14,29 @@
       <a href="index.html" class="text-blue-600 hover:underline">⬅️ العودة</a>
     </div>
 
-    <!-- ✅ حقل البحث -->
     <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب مؤرشف..." class="w-full p-2 border rounded">
 
     <div id="archivedList" class="space-y-4"></div>
   </div>
 
-  <script>
-    const archivedPlayers = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
+  <script type="module">
+    import { db } from './firebase.js';
+    import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     const archivedList = document.getElementById("archivedList");
     const searchInput = document.getElementById("searchInput");
 
-    function renderArchived() {
+    async function fetchArchivedPlayers() {
+      const snapshot = await getDocs(collection(db, "archivedPlayers"));
+      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderArchived(players);
+    }
+
+    function renderArchived(players) {
       const query = searchInput.value.toLowerCase();
       archivedList.innerHTML = "";
 
-      const filtered = archivedPlayers.filter(player =>
+      const filtered = players.filter(player =>
         player.name && player.name.toLowerCase().includes(query)
       );
 
@@ -39,7 +45,7 @@
         return;
       }
 
-      filtered.forEach((player, index) => {
+      filtered.forEach(player => {
         const card = document.createElement("div");
         card.className = "bg-gray-50 p-4 border rounded-xl shadow-sm";
 
@@ -64,7 +70,7 @@
           </div>
           <div class="mt-4 flex gap-2">
             <a href="player.html?id=${player.id}" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</a>
-            <button onclick="restore(${index})" class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
+            <button onclick="restore('${player.id}')" class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
           </div>
         `;
 
@@ -72,18 +78,22 @@
       });
     }
 
-    function restore(index) {
-      const archived = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
-      const players = JSON.parse(localStorage.getItem("players") || "[]");
-      const restored = archived.splice(index, 1)[0];
-      players.push(restored);
-      localStorage.setItem("archivedPlayers", JSON.stringify(archived));
-      localStorage.setItem("players", JSON.stringify(players));
-      location.reload();
+    async function restore(id) {
+      const archivedRef = doc(db, "archivedPlayers", id);
+      const playerSnap = await getDoc(archivedRef);
+      if (!playerSnap.exists()) return;
+      const player = playerSnap.data();
+
+      await setDoc(doc(db, "players", id), player);
+      await deleteDoc(archivedRef);
+      fetchArchivedPlayers();
     }
 
-    searchInput.addEventListener("input", renderArchived);
-    renderArchived();
+    searchInput.addEventListener("input", () => {
+      fetchArchivedPlayers();
+    });
+
+    fetchArchivedPlayers();
   </script>
 </body>
 </html>
