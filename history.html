@@ -13,17 +13,31 @@
       <a href="index.html" class="text-blue-600 hover:underline">⬅️ العودة</a>
     </div>
 
+    <!-- ✅ حقل البحث -->
+    <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب مؤرشف..." class="w-full p-2 border rounded">
+
     <div id="archivedList" class="space-y-4"></div>
   </div>
 
   <script>
     const archivedPlayers = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
     const archivedList = document.getElementById("archivedList");
+    const searchInput = document.getElementById("searchInput");
 
-    if (archivedPlayers.length === 0) {
-      archivedList.innerHTML = '<p class="text-gray-600">لا يوجد لاعبين مؤرشفين حالياً.</p>';
-    } else {
-      archivedPlayers.forEach((player, index) => {
+    function renderArchived() {
+      const query = searchInput.value.toLowerCase();
+      archivedList.innerHTML = "";
+
+      const filtered = archivedPlayers.filter(player =>
+        player.name && player.name.toLowerCase().includes(query)
+      );
+
+      if (filtered.length === 0) {
+        archivedList.innerHTML = '<p class="text-gray-600">لا يوجد لاعبين مؤرشفين حالياً.</p>';
+        return;
+      }
+
+      filtered.forEach((player, index) => {
         const card = document.createElement("div");
         card.className = "bg-gray-50 p-4 border rounded-xl shadow-sm";
 
@@ -65,6 +79,9 @@
       localStorage.setItem("players", JSON.stringify(players));
       location.reload();
     }
+
+    searchInput.addEventListener("input", renderArchived);
+    renderArchived();
   </script>
 </body>
 </html>
