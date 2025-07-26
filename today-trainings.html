@@ -8,21 +8,21 @@
 </head>
 <body class="bg-gray-100 p-6">
   <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
-    <div class="flex justify-between items-center flex-wrap gap-2">
+    <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold text-blue-800">🗓️ تمارين حسب اليوم</h1>
       <a href="index.html" class="text-blue-600 hover:underline">⬅️ العودة</a>
     </div>
 
     <!-- اختيار التاريخ والفلترة -->
-    <div class="flex flex-col sm:flex-row flex-wrap gap-2 text-sm items-center">
-      <select id="typeFilter" onchange="renderByDate()" class="p-2 border rounded w-full sm:w-auto">
+    <div class="flex flex-wrap gap-2 text-sm items-center">
+      <select id="typeFilter" onchange="renderByDate()" class="p-2 border rounded">
         <option value="">📂 كل الأنواع</option>
         <option value="אימון אישי">אימון אישי</option>
         <option value="אימון כוח">אימון כוח</option>
         <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
       </select>
-      <input type="date" id="datePicker" class="p-2 border rounded w-full sm:w-auto">
-      <div class="flex flex-wrap gap-2 justify-center">
+      <input type="date" id="datePicker" class="p-2 border rounded">
+      <div class="flex gap-2">
         <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="0">الأحد</button>
         <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="1">الاثنين</button>
         <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="2">الثلاثاء</button>
@@ -36,21 +36,27 @@
     <!-- إضافة تمرين لليوم -->
     <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
       <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين لليوم</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-        <input id="nameSearch" placeholder="🔍 اسم اللاعب" class="p-2 border rounded col-span-1 sm:col-span-2" oninput="filterPlayerOptions()">
-        <select id="playerSelect" class="p-2 border rounded col-span-1 sm:col-span-2"></select>
+      <div class="grid md:grid-cols-4 gap-2">
+        <input id="nameSearch" placeholder="🔍 اسم اللاعب" class="p-2 border rounded col-span-2" oninput="filterPlayerOptions()">
+        <select id="playerSelect" class="p-2 border rounded col-span-2"></select>
         <select id="quickType" class="p-2 border rounded">
           <option value="">نوع التمرين</option>
           <option value="אימון אישי">אימון אישי</option>
           <option value="אימון כוח">אימון כוח</option>
           <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
         </select>
-        <input type="time" id="quickTime" class="p-2 border rounded">
+
+        <!-- ✅ تم تعديل هذا الجزء فقط -->
+        <div>
+          <label for="quickTime" class="block text-sm font-medium text-gray-700">⌚️ الوقت</label>
+          <input type="time" id="quickTime" class="p-2 border rounded w-full">
+        </div>
+
         <label class="flex items-center gap-2">
           <input type="checkbox" id="quickCame">
           <span>✅ أتى</span>
         </label>
-        <button onclick="addQuickTraining()" class="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2">💾 حفظ</button>
+        <button onclick="addQuickTraining()" class="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2 col-span-1">💾 حفظ</button>
       </div>
     </div>
 
@@ -106,12 +112,12 @@
     container.innerHTML = sessions.length === 0
       ? '<p class="text-gray-600">لا توجد تمارين في هذا اليوم.</p>'
       : sessions.map((item, idx) => `
-        <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center">
           <div>
             <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
             <p class="text-sm text-gray-600">📅 ${formatDate(item.ref.date)} | ⏰ ${item.time} | 🏷️ ${item.type}</p>
           </div>
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-2">
             <span class="text-${item.came ? 'green' : 'red'}-600 text-sm">${item.came ? '✅ أتى' : '❌ لم يأتِ'}</span>
             <button onclick="toggleCame(${idx})" class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 text-sm">🔁 تبديل</button>
             <button onclick="removeTraining(${idx})" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 text-sm">🗑️ حذف</button>
