@@ -48,7 +48,7 @@
 
   <script type="module">
     import { db } from './firebase.js';
-    import { collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { collection, getDocs, doc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const nameInput = document.getElementById("playerName");
     const phoneInput = document.getElementById("playerPhone");
@@ -88,7 +88,7 @@
       if (!snapshot.exists()) return;
 
       const archived = snapshot.data();
-      await addDoc(collection(db, "archivedPlayers"), archived);
+      await setDoc(doc(db, "archivedPlayers", id), archived);
       await deleteDoc(playerDoc);
       renderPlayers();
     }
@@ -106,7 +106,9 @@
         return;
       }
 
-      await addDoc(collection(db, "players"), {
+      const playerId = Date.now().toString();
+      await setDoc(doc(db, "players", playerId), {
+        id: playerId,
         name,
         phone,
         subscription: sub,
@@ -154,6 +156,8 @@
       localStorage.removeItem("loggedIn");
       window.location.href = "login.html";
     }
+
+    window.archivePlayer = archivePlayer;
   </script>
 </body>
 </html>
