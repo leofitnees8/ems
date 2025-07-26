@@ -85,7 +85,7 @@
 
   <script type="module">
     import { db } from './firebase.js';
-    import { collection, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const playerId = new URLSearchParams(location.search).get("id");
     const playerRef = doc(db, "players", playerId);
