@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -152,13 +153,19 @@
       `;
 
       subsList.innerHTML = `
-        ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
-      ` + player.subscriptions.map((sub, i) => `
-        <li class="flex justify-between items-center">
-          <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
-          <button onclick="deleteSubscription(${i})" class="text-red-600 hover:underline text-sm">🗑️ حذف</button>
-        </li>
-      `).join("");
+        ${player.subscription ? `
+          <li class="flex justify-between items-center text-gray-700">
+            <span>📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</span>
+            <button onclick="deletePrimarySubscription()" class="text-red-600 hover:underline text-sm">🗑️ حذف</button>
+          </li>
+        ` : ""}
+        ${player.subscriptions.map((sub, i) => `
+          <li class="flex justify-between items-center">
+            <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
+            <button onclick="deleteSubscription(${i})" class="text-red-600 hover:underline text-sm">🗑️ حذف</button>
+          </li>
+        `).join("")}
+      `;
 
       const total = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
       const attended = player.attendance.filter(a => a.came).length;
@@ -166,27 +173,17 @@
       showTable();
     }
 
-    function getTypeColor(type) {
-      if (type === "אימון כוח") return "bg-blue-50 text-blue-700";
-      if (type === "אימון רישון 50 שח") return "bg-yellow-50 text-yellow-700";
-      if (type === "אימון אישי") return "bg-green-50 text-green-700";
-      return "bg-gray-100 text-gray-700";
-    }
-
     function showTable() {
       weeklyTable.innerHTML = "";
       player.attendance.forEach((a, i) => {
         const row = document.createElement("tr");
-        row.className = getTypeColor(a.type);
         row.innerHTML = `
           <td>${a.day}</td>
           <td>${a.date}</td>
           <td>${a.time}</td>
           <td>${a.type}</td>
           <td class="text-xl cursor-pointer" onclick="toggleCame(${i})">${a.came ? "✅" : "❌"}</td>
-          <td>
-            <button onclick="deleteTraining(${i})" class="text-red-600 hover:underline">🗑️ حذف</button>
-          </td>
+          <td><button onclick="deleteTraining(${i})" class="text-red-600 hover:underline">🗑️ حذف</button></td>
         `;
         weeklyTable.appendChild(row);
       });
@@ -212,6 +209,12 @@
       showInfo();
     };
 
+    window.deletePrimarySubscription = async function() {
+      if (!confirm("هل أنت متأكد أنك تريد حذف الاشتراك الأولي؟")) return;
+      await updateDoc(playerRef, { subscription: "" });
+      showInfo();
+    };
+
     window.addSubscription = async function() {
       const type = prompt("أدخل عدد التمارين (مثلاً: 15 أو 35 أو 50):");
       if (!type || !["15", "35", "50"].includes(type)) {
@@ -221,9 +224,7 @@
       const date = new Date().toISOString().split("T")[0];
       const newSub = { type, date };
       player.subscriptions.push(newSub);
-      await updateDoc(playerRef, {
-        subscriptions: player.subscriptions
-      });
+      await updateDoc(playerRef, { subscriptions: player.subscriptions });
       showInfo();
     };
 
@@ -249,9 +250,7 @@
       };
 
       player.attendance.push(newTraining);
-      await updateDoc(playerRef, {
-        attendance: player.attendance
-      });
+      await updateDoc(playerRef, { attendance: player.attendance });
 
       showInfo();
       selectedDay = "";
