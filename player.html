@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -14,8 +15,10 @@
   <div class="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-lg space-y-8">
     <h1 class="text-4xl font-bold text-center text-blue-800">📚 ملف اللاعب</h1>
 
+    <!-- بيانات اللاعب -->
     <div id="playerInfo" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 text-lg"></div>
 
+    <!-- سجل الاشتراكات مع زر -->
     <div>
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-2xl font-bold text-blue-700">🗂️ سجل الاشتراكات</h2>
@@ -24,7 +27,9 @@
       <ul id="subscriptionsList" class="list-disc pr-6 text-gray-600 text-base space-y-1"></ul>
     </div>
 
+    <!-- التقدم -->
     <div id="progress" class="text-center text-xl font-semibold text-green-600"></div>
+    <!-- جدول التمارين -->
     <div>
       <h2 class="text-2xl font-bold text-blue-700 mb-4">📅 جدول التمارين</h2>
       <div class="overflow-x-auto">
@@ -44,6 +49,7 @@
       </div>
     </div>
 
+    <!-- نموذج إضافة تمرين -->
     <div class="border-t pt-6">
       <h3 class="text-xl font-bold mb-4">➕ إضافة تمرين</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -113,10 +119,7 @@
       dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
       btn.classList.add("bg-blue-500", "text-white");
 
-      const dayMap = {
-        'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2,
-        'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6
-      };
+      const dayMap = {'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6};
       const today = new Date();
       const targetIndex = dayMap[selectedDay];
       let diff = (targetIndex - today.getDay() + 7) % 7;
@@ -153,14 +156,14 @@
         <li class="flex justify-between items-center text-gray-700">
           <span>📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</span>
           <button onclick="deletePrimarySubscription()" class="text-red-600 hover:underline text-sm">🗑️ حذف</button>
-        </li>
-      ` : ""}
-      ${player.subscriptions.map((sub, i) => `
-        <li class="flex justify-between items-center">
-          <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
-          <button onclick="deleteSubscription(${i})" class="text-red-500 text-sm hover:underline">🗑️ حذف</button>
-        </li>
-      `).join("")}
+        </li>` : ""
+    }
+    ${player.subscriptions.map((sub, i) => `
+      <li class="flex justify-between items-center">
+        <span>${sub.date} - ${getSubscriptionLabel(sub.type)}</span>
+        <button onclick="deleteSubscription(${i})" class="text-red-500 text-sm hover:underline">🗑️ حذف</button>
+      </li>
+    `).join("")}
     `;
 
     updateProgress();
@@ -171,13 +174,14 @@
     const attended = player.attendance.filter(a => a.came).length;
     progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
   }
+
   function addSubscription() {
-    const choice = prompt("اختر نوع الاشتراك:\n15 - 1500 شيكل\n35 - 3000 شيكل\n50 - 4000 شيكل");
+    const choice = prompt("اختر نوع الاشتراك:
+15 - 1500 شيكل
+35 - 3000 شيكل
+50 - 4000 شيكل");
     if (["15", "35", "50"].includes(choice)) {
-      player.subscriptions.push({
-        type: choice,
-        date: new Date().toISOString().split("T")[0]
-      });
+      player.subscriptions.push({ type: choice, date: new Date().toISOString().split("T")[0] });
       save();
       showInfo();
     } else {
