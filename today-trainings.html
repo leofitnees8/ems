@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>🗓️ אימונים היום - تمارين اليوم</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-blue-800">🗓️ تمارين حسب اليوم</h1>
+      <a href="index.html" class="text-blue-600 hover:underline">⬅️ العودة</a>
+    </div>
+
+    <!-- اختيار التاريخ والفلترة -->
+    <div class="flex flex-wrap gap-2 text-sm items-center">
+      <select id="typeFilter" onchange="renderByDate()" class="p-2 border rounded">
+        <option value="">📂 كل الأنواع</option>
+        <option value="אימון אישי">אימון אישי</option>
+        <option value="אימון כוח">אימון כוח</option>
+        <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
+      </select>
+      <input type="date" id="datePicker" class="p-2 border rounded">
+      <div class="flex gap-2">
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="0">الأحد</button>
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="1">الاثنين</button>
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="2">الثلاثاء</button>
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="3">الأربعاء</button>
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="4">الخميس</button>
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="5">الجمعة</button>
+        <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="6">السبت</button>
+      </div>
+    </div>
+    <!-- إضافة تمرين لليوم -->
+    <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
+      <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين لليوم</h3>
+      <div class="grid md:grid-cols-4 gap-2">
+        <input id="nameSearch" placeholder="🔍 اسم اللاعب" class="p-2 border rounded col-span-2" oninput="filterPlayerOptions()">
+        <select id="playerSelect" class="p-2 border rounded col-span-2"></select>
+        <select id="quickType" class="p-2 border rounded">
+          <option value="">نوع التمرين</option>
+          <option value="אימון אישי">אימון אישי</option>
+          <option value="אימון כוח">אימון כוח</option>
+          <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
+        </select>
+        <input type="time" id="quickTime" class="p-2 border rounded">
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="quickCame">
+          <span>✅ أتى</span>
+        </label>
+        <button onclick="addQuickTraining()" class="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2 col-span-1">💾 حفظ</button>
+      </div>
+    </div>
+
+    <!-- قائمة التمارين لليوم -->
+    <div id="todayList" class="space-y-4 pt-6"></div>
+  </div>
+<script>
+  const players = JSON.parse(localStorage.getItem("players") || "[]");
+  const container = document.getElementById("todayList");
+  const dateInput = document.getElementById("datePicker");
+
+  const today = new Date();
+  dateInput.value = today.toISOString().split("T")[0];
+
+  document.querySelectorAll(".day-filter").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetDay = parseInt(btn.dataset.day);
+      const d = new Date();
+      const diff = (targetDay - d.getDay() + 7) % 7;
+      d.setDate(d.getDate() + diff);
+      dateInput.value = d.toISOString().split("T")[0];
+      renderByDate();
+      initPlayerOptions();
+    });
+  });
+
+  dateInput.addEventListener("change", renderByDate);
+
+  function renderByDate() {
+    const selected = dateInput.value;
+    const typeFilter = document.getElementById("typeFilter")?.value || "";
+    const sessions = [];
+
+    players.forEach(player => {
+      (player.attendance || []).forEach(att => {
+        if (att.date === selected && (!typeFilter || att.type === typeFilter)) {
+          sessions.push({
+            name: player.name,
+            id: player.id,
+            time: att.time,
+            type: att.type,
+            came: att.came,
+            ref: att,
+            playerRef: player
+          });
+        }
+      });
+    });
+
+    sessions.sort((a, b) => a.time.localeCompare(b.time));
+
+    container.innerHTML = sessions.length === 0
+      ? '<p class="text-gray-600">لا توجد تمارين في هذا اليوم.</p>'
+      : sessions.map((item, idx) => `
+        <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center">
+          <div>
+            <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
+            <p class="text-sm text-gray-600">⏰ ${item.time} | 🏷️ ${item.type}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-${item.came ? 'green' : 'red'}-600 text-sm">${item.came ? '✅ أتى' : '❌ لم يأتِ'}</span>
+            <button onclick="toggleCame(${idx})" class="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 text-sm">🔁 تبديل</button>
+            <button onclick="removeTraining(${idx})" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 text-sm">🗑️ حذف</button>
+          </div>
+        </div>`).join("");
+  }
+
+  function toggleCame(index) {
+    const allSessions = [];
+    players.forEach(player => {
+      (player.attendance || []).forEach(att => {
+        allSessions.push({ ref: att, playerRef: player });
+      });
+    });
+
+    const selected = dateInput.value;
+    const filtered = allSessions.filter(s => s.ref.date === selected).sort((a, b) => a.ref.time.localeCompare(b.ref.time));
+    const target = filtered[index];
+
+    target.ref.came = !target.ref.came;
+
+    const total = parseInt(target.playerRef.subscriptions?.at(-1)?.type || 0);
+    const attended = target.playerRef.attendance.filter(a => a.came).length;
+    target.playerRef.progress = `${attended}/${total}`;
+
+    localStorage.setItem("players", JSON.stringify(players));
+    renderByDate();
+  }
+
+  function removeTraining(index) {
+    const allSessions = [];
+    players.forEach(player => {
+      (player.attendance || []).forEach(att => {
+        allSessions.push({ ref: att, playerRef: player });
+      });
+    });
+
+    const selected = dateInput.value;
+    const filtered = allSessions.filter(s => s.ref.date === selected).sort((a, b) => a.ref.time.localeCompare(b.ref.time));
+    const target = filtered[index];
+
+    target.playerRef.attendance = target.playerRef.attendance.filter(a => a !== target.ref);
+    localStorage.setItem("players", JSON.stringify(players));
+    renderByDate();
+  }
+
+  function initPlayerOptions() {
+    const select = document.getElementById("playerSelect");
+    if (!select) return;
+    select.innerHTML = "";
+    players.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      select.appendChild(opt);
+    });
+  }
+
+  function filterPlayerOptions() {
+    const query = document.getElementById("nameSearch").value.toLowerCase();
+    const select = document.getElementById("playerSelect");
+    select.innerHTML = "";
+    players.forEach(p => {
+      if (p.name.toLowerCase().includes(query)) {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.name;
+        select.appendChild(opt);
+      }
+    });
+  }
+
+  function addQuickTraining() {
+    const id = document.getElementById("playerSelect").value;
+    const type = document.getElementById("quickType").value;
+    const time = document.getElementById("quickTime").value;
+    const came = document.getElementById("quickCame").checked;
+    const date = document.getElementById("datePicker").value;
+    const player = players.find(p => p.id == id);
+    if (!player || !type || !time) return alert("يرجى تعبئة جميع الحقول");
+
+    player.attendance = player.attendance || [];
+    player.attendance.push({
+      day: new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
+      date,
+      time,
+      type,
+      came
+    });
+
+    if (came) {
+      const total = parseInt(player.subscriptions?.at(-1)?.type || 0);
+      const attended = player.attendance.filter(a => a.came).length;
+      player.progress = `${attended}/${total}`;
+    }
+
+    localStorage.setItem("players", JSON.stringify(players));
+    renderByDate();
+    alert("✅ تم إضافة التمرين للاعب");
+  }
+
+  renderByDate();
+  initPlayerOptions();
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول • EMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com">
+    function logout() {
+      localStorage.removeItem("loggedIn");
+      window.location.href = "login.html";
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-sm bg-white p-6 rounded-xl shadow space-y-4">
+    <div class="text-center">
+      <button onclick="logout()" class="absolute top-4 left-4 text-sm text-gray-500 underline hover:text-black">🔓 تسجيل خروج</button>
+      <img src="ems.png" alt="EMS Logo" class="w-20 mx-auto mb-4">
+      <h1 class="text-2xl font-bold text-blue-700">تسجيل الدخول</h1>
+    </div>
+    <div class="space-y-3">
+      <input type="text" id="username" placeholder="اسم المستخدم" class="w-full p-2 border rounded">
+      <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-2 border rounded" onkeypress="if(event.key === 'Enter') login()">
+      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">دخول</button>
+      <p id="error" class="text-red-600 text-center text-sm hidden">❌ اسم المستخدم أو كلمة المرور غير صحيحة</p>
+    </div>
+  </div>
+
+  <script>
+    function login() {
+      const u = document.getElementById("username").value.trim();
+      const p = document.getElementById("password").value;
+      if (u === "leo" && p === "m22558800") {
+        localStorage.setItem("loggedIn", "true");
+        window.location.href = "index.html";
+      } else {
+        document.getElementById("error").classList.remove("hidden");
+      }
+    }
+
+    // إذا كان المستخدم قد سجل دخول سابقًا
+    if (localStorage.getItem("loggedIn") === "true") {
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
