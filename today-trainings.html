@@ -32,6 +32,7 @@
         <button class="day-filter bg-gray-200 hover:bg-blue-200 px-3 py-1 rounded" data-day="6">السبت</button>
       </div>
     </div>
+
     <!-- إضافة تمرين لليوم -->
     <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
       <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين لليوم</h3>
@@ -56,11 +57,13 @@
     <!-- قائمة التمارين لليوم -->
     <div id="todayList" class="space-y-4 pt-6"></div>
   </div>
+
 <script>
   const players = JSON.parse(localStorage.getItem("players") || "[]");
   const container = document.getElementById("todayList");
   const dateInput = document.getElementById("datePicker");
 
+  // ✅ تحديث التاريخ تلقائيًا عند فتح الصفحة
   const today = new Date();
   dateInput.value = today.toISOString().split("T")[0];
 
@@ -107,7 +110,7 @@
         <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center">
           <div>
             <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
-            <p class="text-sm text-gray-600">⏰ ${item.time} | 🏷️ ${item.type}</p>
+            <p class="text-sm text-gray-600">📅 ${formatDate(item.ref.date)} | ⏰ ${item.time} | 🏷️ ${item.type}</p>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-${item.came ? 'green' : 'red'}-600 text-sm">${item.came ? '✅ أتى' : '❌ لم يأتِ'}</span>
@@ -115,6 +118,12 @@
             <button onclick="removeTraining(${idx})" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 text-sm">🗑️ حذف</button>
           </div>
         </div>`).join("");
+  }
+
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = date.toLocaleDateString("ar-EG", { weekday: "long" });
+    return `${day} - ${dateString}`;
   }
 
   function toggleCame(index) {
