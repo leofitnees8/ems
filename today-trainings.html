@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script type="module" src="firebase.js"></script>
   <meta charset="UTF-8">
-  <title>🗓️ אימונים היום - تمارين اليوم</title>
+  <title>אימונים היום - تمارين اليوم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="firebase.js"></script>
 </head>
 <body class="bg-gray-100 p-6">
   <div class="max-w-6xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
@@ -14,7 +14,6 @@
       <a href="index.html" class="text-blue-600 hover:underline">⬅️ العودة</a>
     </div>
 
-    <!-- اختيار التاريخ والفلترة -->
     <div class="flex flex-wrap gap-2 text-sm items-center">
       <select id="typeFilter" onchange="renderByDate()" class="p-2 border rounded">
         <option value="">📂 كل الأنواع</option>
@@ -34,7 +33,6 @@
       </div>
     </div>
 
-    <!-- إضافة تمرين لليوم -->
     <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
       <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين لليوم</h3>
       <div class="grid md:grid-cols-4 gap-2">
@@ -54,11 +52,10 @@
           <input type="checkbox" id="quickCame">
           <span>✅ أتى</span>
         </label>
-        <button id="saveBtn" class="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2 col-span-1">💾 حفظ</button>
+        <button id="saveBtn" class="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2 col-span-1">📅 حفظ</button>
       </div>
     </div>
 
-    <!-- قائمة التمارين لليوم -->
     <div id="todayList" class="space-y-4 pt-6"></div>
   </div>
 
@@ -89,7 +86,7 @@
       const selected = dateInput.value;
       const typeFilter = document.getElementById("typeFilter").value;
       const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => doc.data());
+      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       const sessions = [];
       players.forEach(player => {
@@ -131,7 +128,7 @@
     async function initPlayerOptions() {
       const select = document.getElementById("playerSelect");
       const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => doc.data());
+      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       select.innerHTML = "";
       players.forEach(p => {
         const opt = document.createElement("option");
@@ -147,7 +144,7 @@
       const query = document.getElementById("nameSearch").value.toLowerCase();
       const select = document.getElementById("playerSelect");
       const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => doc.data());
+      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       select.innerHTML = "";
       players.forEach(p => {
         if (p.name.toLowerCase().includes(query)) {
@@ -181,10 +178,7 @@
         came
       });
 
-      await updateDoc(docRef, {
-        attendance: player.attendance
-      });
-
+      await updateDoc(docRef, { attendance: player.attendance });
       renderByDate();
       alert("✅ تم إضافة التمرين للاعب");
     });
