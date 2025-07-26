@@ -2,7 +2,6 @@
 <html lang="ar" dir="rtl">
 <head>
   <script type="module" src="firebase.js"></script>
-
   <meta charset="UTF-8">
   <title>مكتبة اللاعب</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +11,6 @@
     th, td { text-align: center; padding: 12px; border: 1px solid #e5e7eb; }
   </style>
 </head>
-  
 <body class="bg-gray-100 min-h-screen p-4">
   <div class="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-lg space-y-8">
     <h1 class="text-4xl font-bold text-center text-blue-800">📚 ملف اللاعب</h1>
@@ -88,192 +86,148 @@
 
     <a href="index.html" class="block text-center text-blue-600 hover:underline">⬅️ العودة</a>
   </div>
-<script>
-  const playerId = new URLSearchParams(location.search).get("id");
-  const players = JSON.parse(localStorage.getItem("players") || "[]");
-  const archivedPlayers = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
+  <script type="module">
+    import { db } from './firebase.js';
+    import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  let player = players.find(p => p.id == playerId) || archivedPlayers.find(p => p.id == playerId);
-  if (!player) {
-    document.body.innerHTML = '<p class="text-red-600 text-center text-xl mt-10">❌ اللاعب غير موجود في البيانات.</p>';
-    throw new Error("Player not found");
-  }
+    const playerId = new URLSearchParams(location.search).get("id");
+    const playerRef = doc(db, "players", playerId);
 
-  player.subscriptions = player.subscriptions || [];
-  player.attendance = player.attendance || [];
+    let player;
+    const playerInfo = document.getElementById("playerInfo");
+    const subsList = document.getElementById("subscriptionsList");
+    const progress = document.getElementById("progress");
+    const weeklyTable = document.getElementById("weeklyTable");
 
-  const playerInfo = document.getElementById("playerInfo");
-  const subsList = document.getElementById("subscriptionsList");
-  const progress = document.getElementById("progress");
-  const weeklyTable = document.getElementById("weeklyTable");
+    const dayInputButtons = document.querySelectorAll(".day-btn");
+    const dateInput = document.getElementById("dateInput");
+    const timeInput = document.getElementById("timeInput");
+    const typeInput = document.getElementById("typeInput");
+    const cameInput = document.getElementById("cameInput");
 
-  const dayInputButtons = document.querySelectorAll(".day-btn");
-  const dateInput = document.getElementById("dateInput");
-  const timeInput = document.getElementById("timeInput");
-  const typeInput = document.getElementById("typeInput");
-  const cameInput = document.getElementById("cameInput");
+    let selectedDay = "";
 
-  let selectedDay = "";
+    dayInputButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectedDay = btn.dataset.day;
+        dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
+        btn.classList.add("bg-blue-500", "text-white");
 
-  dayInputButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      selectedDay = btn.dataset.day;
-      dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
-      btn.classList.add("bg-blue-500", "text-white");
-
-      const dayMap = {
-        'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2,
-        'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6
-      };
-      const today = new Date();
-      const todayIndex = today.getDay();
-      const targetIndex = dayMap[selectedDay];
-      let diff = (targetIndex - todayIndex + 7) % 7;
-      if (diff < 2) diff += 7;
-      const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
-      dateInput.value = targetDate.toISOString().split("T")[0];
-    });
-  });
-
-  function save() {
-    localStorage.setItem("players", JSON.stringify(players));
-  }
-
-  function getSubscriptionLabel(value) {
-    switch (value) {
-      case "15": return "15 تمرين - 1500 شيكل";
-      case "35": return "35 تمرين - 3000 شيكل";
-      case "50": return "50 تمرين - 4000 شيكل";
-      default: return "غير معروف";
-    }
-  }
-
-  function showInfo() {
-    playerInfo.innerHTML = `
-      <div>👤 الاسم: ${player.name || "غير معروف"}</div>
-      <div>📞 الهاتف: ${player.phone || "-"}</div>
-      <div>📏 الطول: ${player.height || "-"} سم</div>
-      <div>⚖️ الوزن: ${player.weight || "-"} كغ</div>
-      <div>🎂 العمر: ${player.age || "-"}</div>
-    `;
-
-    subsList.innerHTML = `
-      ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
-    ` + player.subscriptions.map((sub, i) => `
-      <li class="flex justify-between items-center">
-        <span>${sub.date} - ${sub.type} تمرين</span>
-        <button onclick="deleteSubscription(${i})" class="text-red-500 text-sm hover:underline">🗑️ حذف</button>
-      </li>
-    `).join("");
-
-    updateProgress();
-  }
-
-  function updateProgress() {
-    const total = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
-    const attended = player.attendance.filter(a => a.came).length;
-    progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
-  }
-
-  function addSubscription() {
-    const choice = prompt("اختر نوع الاشتراك:\n15 - 1500 شيكل\n35 - 3000 شيكل\n50 - 4000 شيكل");
-    if (["15", "35", "50"].includes(choice)) {
-      player.subscriptions.push({
-        type: choice,
-        date: new Date().toISOString().split("T")[0]
+        const dayMap = {
+          'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2,
+          'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6
+        };
+        const today = new Date();
+        const todayIndex = today.getDay();
+        const targetIndex = dayMap[selectedDay];
+        let diff = (targetIndex - todayIndex + 7) % 7;
+        if (diff < 2) diff += 7;
+        const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
+        dateInput.value = targetDate.toISOString().split("T")[0];
       });
-      save();
-      showInfo();
-    } else {
-      alert("❗ يرجى اختيار 15 أو 35 أو 50 فقط");
+    });
+
+    function getSubscriptionLabel(value) {
+      switch (value) {
+        case "15": return "15 تمرين - 1500 شيكل";
+        case "35": return "35 تمرين - 3000 شيكل";
+        case "50": return "50 تمرين - 4000 شيكل";
+        default: return "غير معروف";
+      }
     }
-  }
 
-  function deleteSubscription(index) {
-    if (confirm("هل تريد حذف هذا الاشتراك؟")) {
-      player.subscriptions.splice(index, 1);
-      save();
-      showInfo();
-    }
-  }
+    async function showInfo() {
+      const snap = await getDoc(playerRef);
+      if (!snap.exists()) {
+        document.body.innerHTML = '<p class="text-red-600 text-center text-xl mt-10">❌ اللاعب غير موجود في البيانات.</p>';
+        return;
+      }
+      player = snap.data();
+      player.attendance = player.attendance || [];
+      player.subscriptions = player.subscriptions || [];
 
-  function getTypeColor(type) {
-    if (type === "אימון כוח") return "bg-blue-50 text-blue-700";
-    if (type === "אימון רישון 50 שח") return "bg-yellow-50 text-yellow-700";
-    if (type === "אימון אישי") return "bg-green-50 text-green-700";
-    return "bg-gray-100 text-gray-700";
-  }
-
-  function showTable() {
-    weeklyTable.innerHTML = "";
-    player.attendance.forEach((a, i) => {
-      const row = document.createElement("tr");
-      row.className = getTypeColor(a.type);
-      row.innerHTML = `
-        <td>${a.day}</td>
-        <td>${a.date}</td>
-        <td>${a.time}</td>
-        <td>${a.type}</td>
-        <td>${a.came ? "✅" : "❌"}</td>
-        <td>
-          <button onclick="toggle(${i})" class="text-blue-600 hover:underline">تبديل</button>
-          <button onclick="remove(${i})" class="text-red-600 hover:underline ml-2">🗑️ حذف</button>
-        </td>
+      playerInfo.innerHTML = `
+        <div>👤 الاسم: ${player.name || "غير معروف"}</div>
+        <div>📞 الهاتف: ${player.phone || "-"}</div>
+        <div>📏 الطول: ${player.height || "-"} سم</div>
+        <div>⚖️ الوزن: ${player.weight || "-"} كغ</div>
+        <div>🎂 العمر: ${player.age || "-"}</div>
       `;
-      weeklyTable.appendChild(row);
-    });
-  }
 
-  document.getElementById("addTraining").onclick = () => {
-    if (!dateInput.value || !timeInput.value || !typeInput.value) {
-      alert("يرجى تعبئة التاريخ والوقت ونوع التمرين.");
-      return;
-    }
+      subsList.innerHTML = `
+        ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
+      ` + player.subscriptions.map((sub, i) => `
+        <li class="flex justify-between items-center">
+          <span>${sub.date} - ${sub.type} تمرين</span>
+        </li>
+      `).join("");
 
-    let dayName = selectedDay;
-    if (!dayName) {
-      const date = new Date(dateInput.value);
-      const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-      dayName = dayNames[date.getDay()];
-    }
-
-    player.attendance.push({
-      day: dayName,
-      date: dateInput.value,
-      time: timeInput.value,
-      type: typeInput.value,
-      came: cameInput.checked
-    });
-
-    save();
-    showInfo();
-    showTable();
-    selectedDay = "";
-    dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
-    dateInput.value = "";
-    timeInput.value = "";
-    typeInput.value = "";
-    cameInput.checked = false;
-  };
-
-  window.toggle = i => {
-    player.attendance[i].came = !player.attendance[i].came;
-    save();
-    showInfo();
-    showTable();
-  };
-
-  window.remove = i => {
-    if (confirm("هل تريد حذف هذا التمرين؟")) {
-      player.attendance.splice(i, 1);
-      save();
-      showInfo();
+      const total = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
+      const attended = player.attendance.filter(a => a.came).length;
+      progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
       showTable();
     }
-  };
 
-  showInfo();
-  showTable();
-</script>
+    function getTypeColor(type) {
+      if (type === "אימון כוח") return "bg-blue-50 text-blue-700";
+      if (type === "אימון רישון 50 שח") return "bg-yellow-50 text-yellow-700";
+      if (type === "אימון אישי") return "bg-green-50 text-green-700";
+      return "bg-gray-100 text-gray-700";
+    }
+
+    function showTable() {
+      weeklyTable.innerHTML = "";
+      player.attendance.forEach((a, i) => {
+        const row = document.createElement("tr");
+        row.className = getTypeColor(a.type);
+        row.innerHTML = `
+          <td>${a.day}</td>
+          <td>${a.date}</td>
+          <td>${a.time}</td>
+          <td>${a.type}</td>
+          <td>${a.came ? "✅" : "❌"}</td>
+          <td></td>
+        `;
+        weeklyTable.appendChild(row);
+      });
+    }
+
+    document.getElementById("addTraining").onclick = async () => {
+      if (!dateInput.value || !timeInput.value || !typeInput.value) {
+        alert("يرجى تعبئة التاريخ والوقت ونوع التمرين.");
+        return;
+      }
+
+      let dayName = selectedDay;
+      if (!dayName) {
+        const date = new Date(dateInput.value);
+        const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        dayName = dayNames[date.getDay()];
+      }
+
+      const newTraining = {
+        day: dayName,
+        date: dateInput.value,
+        time: timeInput.value,
+        type: typeInput.value,
+        came: cameInput.checked
+      };
+
+      player.attendance.push(newTraining);
+      await updateDoc(playerRef, {
+        attendance: player.attendance
+      });
+
+      showInfo();
+      selectedDay = "";
+      dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
+      dateInput.value = "";
+      timeInput.value = "";
+      typeInput.value = "";
+      cameInput.checked = false;
+    };
+
+    showInfo();
+  </script>
 </body>
 </html>
