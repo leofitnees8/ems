@@ -2,46 +2,275 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>تسجيل الدخول • EMS</title>
+  <title>مكتبة اللاعب</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com">
-    function logout() {
-      localStorage.removeItem("loggedIn");
-      window.location.href = "login.html";
-    }
-  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: center; padding: 12px; border: 1px solid #e5e7eb; }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-sm bg-white p-6 rounded-xl shadow space-y-4">
-    <div class="text-center">
-      <button onclick="logout()" class="absolute top-4 left-4 text-sm text-gray-500 underline hover:text-black">🔓 تسجيل خروج</button>
-      <img src="ems.png" alt="EMS Logo" class="w-20 mx-auto mb-4">
-      <h1 class="text-2xl font-bold text-blue-700">تسجيل الدخول</h1>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-lg space-y-8">
+    <h1 class="text-4xl font-bold text-center text-blue-800">📚 ملف اللاعب</h1>
+
+    <!-- بيانات اللاعب -->
+    <div id="playerInfo" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 text-lg"></div>
+
+    <!-- سجل الاشتراكات مع زر -->
+    <div>
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-2xl font-bold text-blue-700">🗂️ سجل الاشتراكات</h2>
+        <button onclick="addSubscription()" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 text-sm">➕ إضافة اشتراك</button>
+      </div>
+      <ul id="subscriptionsList" class="list-disc pr-6 text-gray-600 text-base space-y-1"></ul>
     </div>
-    <div class="space-y-3">
-      <input type="text" id="username" placeholder="اسم المستخدم" class="w-full p-2 border rounded">
-      <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-2 border rounded" onkeypress="if(event.key === 'Enter') login()">
-      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">دخول</button>
-      <p id="error" class="text-red-600 text-center text-sm hidden">❌ اسم المستخدم أو كلمة المرور غير صحيحة</p>
+
+    <!-- التقدم -->
+    <div id="progress" class="text-center text-xl font-semibold text-green-600"></div>
+    <!-- جدول التمارين -->
+    <div>
+      <h2 class="text-2xl font-bold text-blue-700 mb-4">📅 جدول التمارين</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border border-gray-300 rounded-xl">
+          <thead class="bg-blue-100 text-blue-900">
+            <tr>
+              <th>اليوم</th>
+              <th>التاريخ</th>
+              <th>الوقت</th>
+              <th>نوع التمرين</th>
+              <th>الحضور</th>
+              <th>خيارات</th>
+            </tr>
+          </thead>
+          <tbody id="weeklyTable"></tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- نموذج إضافة تمرين -->
+    <div class="border-t pt-6">
+      <h3 class="text-xl font-bold mb-4">➕ إضافة تمرين</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">اليوم</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="الأحد">الأحد</button>
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="الاثنين">الاثنين</button>
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="الثلاثاء">الثلاثاء</button>
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="الأربعاء">الأربعاء</button>
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="الخميس">الخميس</button>
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="الجمعة">الجمعة</button>
+            <button class="day-btn bg-gray-200 px-3 py-2 rounded hover:bg-blue-300" data-day="السبت">السبت</button>
+          </div>
+        </div>
+
+        <input id="dateInput" type="date" class="p-2 border rounded">
+        <input id="timeInput" type="time" class="p-2 border rounded">
+
+        <select id="typeInput" class="p-2 border rounded">
+          <option value="">نوع التمرين</option>
+          <option value="אימון כוח">אימון כוח</option>
+          <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
+          <option value="אימון אישי">אימון אישי</option>
+        </select>
+
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="cameInput">
+          <span>✅ أتى</span>
+        </label>
+      </div>
+      <button id="addTraining" class="mt-4 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">حفظ التمرين</button>
+    </div>
+
+    <a href="index.html" class="block text-center text-blue-600 hover:underline">⬅️ العودة</a>
   </div>
+<script>
+  const playerId = new URLSearchParams(location.search).get("id");
+  const players = JSON.parse(localStorage.getItem("players") || "[]");
+  const archivedPlayers = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
 
-  <script>
-    function login() {
-      const u = document.getElementById("username").value.trim();
-      const p = document.getElementById("password").value;
-      if (u === "leo" && p === "m22558800") {
-        localStorage.setItem("loggedIn", "true");
-        window.location.href = "index.html";
-      } else {
-        document.getElementById("error").classList.remove("hidden");
-      }
+  let player = players.find(p => p.id == playerId) || archivedPlayers.find(p => p.id == playerId);
+  if (!player) {
+    document.body.innerHTML = '<p class="text-red-600 text-center text-xl mt-10">❌ اللاعب غير موجود في البيانات.</p>';
+    throw new Error("Player not found");
+  }
+
+  player.subscriptions = player.subscriptions || [];
+  player.attendance = player.attendance || [];
+
+  const playerInfo = document.getElementById("playerInfo");
+  const subsList = document.getElementById("subscriptionsList");
+  const progress = document.getElementById("progress");
+  const weeklyTable = document.getElementById("weeklyTable");
+
+  const dayInputButtons = document.querySelectorAll(".day-btn");
+  const dateInput = document.getElementById("dateInput");
+  const timeInput = document.getElementById("timeInput");
+  const typeInput = document.getElementById("typeInput");
+  const cameInput = document.getElementById("cameInput");
+
+  let selectedDay = "";
+
+  dayInputButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedDay = btn.dataset.day;
+      dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
+      btn.classList.add("bg-blue-500", "text-white");
+
+      const dayMap = {
+        'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2,
+        'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6
+      };
+      const today = new Date();
+      const todayIndex = today.getDay();
+      const targetIndex = dayMap[selectedDay];
+      let diff = (targetIndex - todayIndex + 7) % 7;
+      if (diff < 2) diff += 7;
+      const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
+      dateInput.value = targetDate.toISOString().split("T")[0];
+    });
+  });
+
+  function save() {
+    localStorage.setItem("players", JSON.stringify(players));
+  }
+
+  function getSubscriptionLabel(value) {
+    switch (value) {
+      case "15": return "15 تمرين - 1500 شيكل";
+      case "35": return "35 تمرين - 3000 شيكل";
+      case "50": return "50 تمرين - 4000 شيكل";
+      default: return "غير معروف";
+    }
+  }
+
+  function showInfo() {
+    playerInfo.innerHTML = `
+      <div>👤 الاسم: ${player.name || "غير معروف"}</div>
+      <div>📞 الهاتف: ${player.phone || "-"}</div>
+      <div>📏 الطول: ${player.height || "-"} سم</div>
+      <div>⚖️ الوزن: ${player.weight || "-"} كغ</div>
+      <div>🎂 العمر: ${player.age || "-"}</div>
+    `;
+
+    subsList.innerHTML = `
+      ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
+    ` + player.subscriptions.map((sub, i) => `
+      <li class="flex justify-between items-center">
+        <span>${sub.date} - ${sub.type} تمرين</span>
+        <button onclick="deleteSubscription(${i})" class="text-red-500 text-sm hover:underline">🗑️ حذف</button>
+      </li>
+    `).join("");
+
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
+    const attended = player.attendance.filter(a => a.came).length;
+    progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
+  }
+
+  function addSubscription() {
+    const choice = prompt("اختر نوع الاشتراك:\n15 - 1500 شيكل\n35 - 3000 شيكل\n50 - 4000 شيكل");
+    if (["15", "35", "50"].includes(choice)) {
+      player.subscriptions.push({
+        type: choice,
+        date: new Date().toISOString().split("T")[0]
+      });
+      save();
+      showInfo();
+    } else {
+      alert("❗ يرجى اختيار 15 أو 35 أو 50 فقط");
+    }
+  }
+
+  function deleteSubscription(index) {
+    if (confirm("هل تريد حذف هذا الاشتراك؟")) {
+      player.subscriptions.splice(index, 1);
+      save();
+      showInfo();
+    }
+  }
+
+  function getTypeColor(type) {
+    if (type === "אימון כוח") return "bg-blue-50 text-blue-700";
+    if (type === "אימון רישון 50 שח") return "bg-yellow-50 text-yellow-700";
+    if (type === "אימון אישי") return "bg-green-50 text-green-700";
+    return "bg-gray-100 text-gray-700";
+  }
+
+  function showTable() {
+    weeklyTable.innerHTML = "";
+    player.attendance.forEach((a, i) => {
+      const row = document.createElement("tr");
+      row.className = getTypeColor(a.type);
+      row.innerHTML = `
+        <td>${a.day}</td>
+        <td>${a.date}</td>
+        <td>${a.time}</td>
+        <td>${a.type}</td>
+        <td>${a.came ? "✅" : "❌"}</td>
+        <td>
+          <button onclick="toggle(${i})" class="text-blue-600 hover:underline">تبديل</button>
+          <button onclick="remove(${i})" class="text-red-600 hover:underline ml-2">🗑️ حذف</button>
+        </td>
+      `;
+      weeklyTable.appendChild(row);
+    });
+  }
+
+  document.getElementById("addTraining").onclick = () => {
+    if (!dateInput.value || !timeInput.value || !typeInput.value) {
+      alert("يرجى تعبئة التاريخ والوقت ونوع التمرين.");
+      return;
     }
 
-    // إذا كان المستخدم قد سجل دخول سابقًا
-    if (localStorage.getItem("loggedIn") === "true") {
-      window.location.href = "index.html";
+    let dayName = selectedDay;
+    if (!dayName) {
+      const date = new Date(dateInput.value);
+      const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      dayName = dayNames[date.getDay()];
     }
-  </script>
+
+    player.attendance.push({
+      day: dayName,
+      date: dateInput.value,
+      time: timeInput.value,
+      type: typeInput.value,
+      came: cameInput.checked
+    });
+
+    save();
+    showInfo();
+    showTable();
+    selectedDay = "";
+    dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
+    dateInput.value = "";
+    timeInput.value = "";
+    typeInput.value = "";
+    cameInput.checked = false;
+  };
+
+  window.toggle = i => {
+    player.attendance[i].came = !player.attendance[i].came;
+    save();
+    showInfo();
+    showTable();
+  };
+
+  window.remove = i => {
+    if (confirm("هل تريد حذف هذا التمرين؟")) {
+      player.attendance.splice(i, 1);
+      save();
+      showInfo();
+      showTable();
+    }
+  };
+
+  showInfo();
+  showTable();
+</script>
 </body>
 </html>
