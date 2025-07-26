@@ -1,12 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <script>
-  if (localStorage.getItem("loggedIn") !== "true") {
-    window.location.href = "login.html";
-  }
-  </script>
-
+  <script type="module" src="firebase.js"></script>
   <meta charset="UTF-8">
   <title>سجل الحضور</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -25,7 +20,7 @@
     </div>
 
     <div class="flex flex-col md:flex-row justify-between items-center gap-2 mt-2">
-      <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب..." class="w-full md:w-2/3 p-2 border rounded" oninput="renderPlayers()">
+      <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب..." class="w-full md:w-2/3 p-2 border rounded">
       <select id="langSelect" onchange="setLanguage()" class="w-full md:w-1/3 p-2 border rounded">
         <option value="ar">🇸🇦 عربي</option>
         <option value="he">🇮🇱 עברית</option>
@@ -51,21 +46,21 @@
     <ul id="playersList" class="space-y-2"></ul>
   </div>
 
-  <script>
+  <script type="module">
+    import { db } from './firebase.js';
+    import { collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     const nameInput = document.getElementById("playerName");
     const phoneInput = document.getElementById("playerPhone");
     const subSelect = document.getElementById("playerSub");
     const addBtn = document.getElementById("addPlayer");
     const list = document.getElementById("playersList");
 
-    let players = JSON.parse(localStorage.getItem("players") || "[]");
-
-    function savePlayers() {
-      localStorage.setItem("players", JSON.stringify(players));
-    }
-
-    function renderPlayers() {
+    async function renderPlayers() {
       const query = document.getElementById("searchInput").value.toLowerCase();
+      const snapshot = await getDocs(collection(db, "players"));
+      const players = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
       list.innerHTML = "";
       players.forEach(player => {
         if (!player.name.toLowerCase().includes(query)) return;
@@ -81,26 +76,24 @@
             <span class="text-sm text-gray-700">⚖️ الوزن: ${player.weight || "-"} كغ</span>
             <span class="text-sm text-gray-700">🎂 العمر: ${player.age || "-"}</span>
           </div>
-          <button onclick="archivePlayer(${player.id})" class="text-red-600 hover:text-red-800 text-sm">🗑️ حذف</button>
+          <button onclick="archivePlayer('${player.id}')" class="text-red-600 hover:text-red-800 text-sm">🗑️ حذف</button>
         `;
         list.appendChild(li);
       });
     }
 
-    function archivePlayer(id) {
-      const player = players.find(p => p.id === id);
-      if (!player) return;
-      if (confirm(`هل تريد أرشفة اللاعب: ${player.name || "بدون اسم"}؟`)) {
-        const archived = JSON.parse(localStorage.getItem("archivedPlayers") || "[]");
-        archived.push(player);
-        localStorage.setItem("archivedPlayers", JSON.stringify(archived));
-        players = players.filter(p => p.id !== id);
-        savePlayers();
-        renderPlayers();
-      }
+    async function archivePlayer(id) {
+      const playerDoc = doc(db, "players", id);
+      const snapshot = await getDoc(playerDoc);
+      if (!snapshot.exists()) return;
+
+      const archived = snapshot.data();
+      await addDoc(collection(db, "archivedPlayers"), archived);
+      await deleteDoc(playerDoc);
+      renderPlayers();
     }
 
-    addBtn.addEventListener("click", () => {
+    addBtn.addEventListener("click", async () => {
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
       const sub = subSelect.value;
@@ -112,8 +105,8 @@
         alert("يجب إدخال اسم اللاعب.");
         return;
       }
-      const newPlayer = {
-        id: Date.now(),
+
+      await addDoc(collection(db, "players"), {
         name,
         phone,
         subscription: sub,
@@ -121,16 +114,16 @@
         weight,
         age,
         attendance: []
-      };
-      players.push(newPlayer);
-      savePlayers();
-      renderPlayers();
+      });
+
       nameInput.value = "";
       phoneInput.value = "";
       subSelect.value = "";
       document.getElementById("playerHeight").value = "";
       document.getElementById("playerWeight").value = "";
       document.getElementById("playerAge").value = "";
+
+      renderPlayers();
     });
 
     function formatWhatsApp(phone) {
@@ -154,15 +147,13 @@
       const savedLang = localStorage.getItem("siteLang") || "ar";
       document.getElementById("langSelect").value = savedLang;
       setLanguage();
+      renderPlayers();
     });
 
     function logout() {
       localStorage.removeItem("loggedIn");
       window.location.href = "login.html";
     }
-
-    renderPlayers();
-    window.archivePlayer = archivePlayer;
   </script>
 </body>
 </html>
