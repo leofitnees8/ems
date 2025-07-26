@@ -8,8 +8,6 @@
   <script type="module" src="firebase.js"></script>
 </head>
 <body class="bg-gray-100 p-6">
-
-  <!-- شعار EMS -->
   <div class="max-w-xl mx-auto mb-4 text-center">
     <img src="ems.png" alt="شعار EMS" class="w-24 mx-auto mb-2 drop-shadow">
     <h2 class="text-xl font-bold text-blue-800">نظام إدارة التمارين EMS</h2>
@@ -26,20 +24,18 @@
       </div>
     </div>
 
-    <!-- اختيار اللغة والبحث -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-2 mt-2">
       <input id="searchInput" type="text" placeholder="🔍 ابحث عن لاعب..." class="w-full md:w-2/3 p-2 border rounded">
       <select id="langSelect" onchange="setLanguage()" class="w-full md:w-1/3 p-2 border rounded">
-        <option value="ar">🇦🇪 عربي</option>
+        <option value="ar">🇸🇦 عربي</option>
         <option value="he">🇮🇱 עברית</option>
       </select>
     </div>
 
-    <!-- نموذج إدخال اللاعب -->
     <div class="space-y-3">
       <input id="playerName" type="text" placeholder="👤 اسم اللاعب (إجباري)" class="w-full p-2 border border-gray-300 rounded-md">
       <input id="playerPhone" type="tel" placeholder="📞 رقم الهاتف" class="w-full p-2 border border-gray-300 rounded-md">
-      <input id="playerHeight" type="number" placeholder="🕥 طول اللاعب (اختياري)" class="w-full p-2 border border-gray-300 rounded-md">
+      <input id="playerHeight" type="number" placeholder="📏 طول اللاعب (اختياري)" class="w-full p-2 border border-gray-300 rounded-md">
       <input id="playerWeight" type="number" placeholder="⚖️ وزن اللاعب (اختياري)" class="w-full p-2 border border-gray-300 rounded-md">
       <input id="playerAge" type="number" placeholder="🎂 عمر اللاعب (اختياري)" class="w-full p-2 border border-gray-300 rounded-md">
       <select id="playerSub" class="w-full p-2 border border-gray-300 rounded-md">
@@ -51,34 +47,31 @@
       <button id="addPlayer" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">➕ أضف اللاعب</button>
     </div>
 
-    <!-- قائمة اللاعبين -->
     <h2 class="text-xl font-bold pt-6 border-t text-center">📋 قائمة اللاعبين</h2>
     <ul id="playersList" class="space-y-2"></ul>
   </div>
 
   <script type="module">
     import { db } from './firebase.js';
-    import {
-      collection,
-      getDocs,
-      setDoc,
-      doc,
-      deleteDoc,
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { collection, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const nameInput = document.getElementById("playerName");
     const phoneInput = document.getElementById("playerPhone");
     const subSelect = document.getElementById("playerSub");
-    const addBtn = document.getElementById("addPlayer");
-    const list = document.getElementById("playersList");
-
     const heightInput = document.getElementById("playerHeight");
     const weightInput = document.getElementById("playerWeight");
     const ageInput = document.getElementById("playerAge");
+    const addBtn = document.getElementById("addPlayer");
+    const list = document.getElementById("playersList");
     const searchInput = document.getElementById("searchInput");
 
-    function renderPlayersFromFirebase(players) {
+    async function fetchPlayers() {
+      const snapshot = await getDocs(collection(db, "players"));
+      const players = snapshot.docs.map(doc => doc.data());
+      renderPlayers(players);
+    }
+
+    function renderPlayers(players) {
       const query = searchInput.value.toLowerCase();
       list.innerHTML = "";
       players.forEach(player => {
@@ -92,27 +85,16 @@
             </a>
             ${player.phone ? `<a href="https://wa.me/${formatWhatsApp(player.phone)}" target="_blank" class="text-green-600 text-sm hover:underline mt-1">📱 واتساب</a>` : ""}
           </div>
-          <button onclick="archivePlayer('${player.id}')" class="text-red-600 hover:text-red-800 text-sm">🗑️ حذف</button>
+          <button onclick="deletePlayer('${player.id}')" class="text-red-600 hover:text-red-800 text-sm">🗑️ حذف</button>
         `;
         list.appendChild(li);
       });
     }
 
-    async function getPlayers() {
-      const snapshot = await getDocs(collection(db, "players"));
-      const players = snapshot.docs.map(doc => doc.data());
-      renderPlayersFromFirebase(players);
-    }
-
-    async function archivePlayer(id) {
-      const playerRef = doc(db, "players", id);
-      const snapshot = await getDocs(collection(db, "players"));
-      const playerDoc = snapshot.docs.find(d => d.id === id);
-      if (!playerDoc) return;
-      const player = playerDoc.data();
-      await setDoc(doc(db, "archivedPlayers", id), player);
-      await deleteDoc(playerRef);
-      getPlayers();
+    async function deletePlayer(id) {
+      if (!confirm("هل تريد حذف اللاعب؟")) return;
+      await deleteDoc(doc(db, "players", id));
+      fetchPlayers();
     }
 
     addBtn.addEventListener("click", async () => {
@@ -146,7 +128,7 @@
       heightInput.value = "";
       weightInput.value = "";
       ageInput.value = "";
-      getPlayers();
+      fetchPlayers();
     });
 
     function formatWhatsApp(phone) {
@@ -170,7 +152,7 @@
       const savedLang = localStorage.getItem("siteLang") || "ar";
       document.getElementById("langSelect").value = savedLang;
       setLanguage();
-      getPlayers();
+      fetchPlayers();
     });
 
     function logout() {
