@@ -20,7 +20,7 @@
         <option value="">📂 كل الأنواع</option>
         <option value="אימון אישי">אימון אישי</option>
         <option value="אימון כוח">אימון כוח</option>
-        <option value="אימון رישון 50 שח">אימון רישון 50 שח</option>
+        <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
       </select>
       <input type="date" id="datePicker" class="p-2 border rounded">
       <div class="flex flex-wrap gap-2 justify-center w-full">
@@ -38,7 +38,7 @@
     <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
       <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين</h3>
       <div class="grid md:grid-cols-4 gap-2">
-        <input id="nameSearch" placeholder="🔍 اسم اللاعب" class="p-2 border rounded col-span-2">
+        <input id="nameSearch" placeholder="🔍 اسم اللاعب (اختياري)" class="p-2 border rounded col-span-2">
         <select id="playerSelect" class="p-2 border rounded col-span-2"></select>
 
         <select id="quickType" class="p-2 border rounded">
@@ -48,13 +48,11 @@
           <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
         </select>
 
-        <!-- التاريخ -->
         <div>
           <label for="quickDate" class="block text-sm font-medium text-gray-700 mb-1">📅 التاريخ</label>
           <input type="date" id="quickDate" class="p-2 border rounded w-full">
         </div>
 
-        <!-- الوقت -->
         <div>
           <label for="quickTime" class="block text-sm font-medium text-gray-700 mb-1">⌚️ الوقت</label>
           <input type="time" id="quickTime" class="p-2 border rounded w-full">
@@ -136,7 +134,7 @@
         : sessions.map(item => `
             <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center gap-3">
               <div>
-                <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
+                <p class="text-lg font-bold text-gray-800">👤 ${item.name || "بدون اسم"}</p>
                 <p class="text-sm text-gray-600">📅 ${formatDate(item.date)} | ⏰ ${item.time || "-"} | 🏷️ ${item.type || "-"}</p>
               </div>
               <div class="flex items-center gap-3">
@@ -159,7 +157,7 @@
       const snapshot = await getDocs(collection(db, "players"));
       const players  = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      select.innerHTML = "";
+      select.innerHTML = '<option value="">— اختر لاعباً —</option>';
       players.forEach(p => {
         const opt = document.createElement("option");
         opt.value = p.id;
@@ -176,7 +174,7 @@
       const snapshot = await getDocs(collection(db, "players"));
       const players  = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      select.innerHTML = "";
+      select.innerHTML = '<option value="">— اختر لاعباً —</option>';
       players.forEach(p => {
         if (p.name.toLowerCase().includes(query)) {
           const opt = document.createElement("option");
@@ -187,18 +185,18 @@
       });
     }
 
-    /* ===== إضافة تمرين (بدون قيود صارمة) ===== */
+    /* ===== إضافة تمرين ===== */
     document.getElementById("saveBtn").addEventListener("click", async () => {
       let   id   = document.getElementById("playerSelect").value;
       const name = document.getElementById("nameSearch").value.trim();
 
-      /* قيم افتراضية في حال تركها المستخدم فارغة */
+      /* قيَم افتراضية عند ترك الحقول فارغة */
       const type = document.getElementById("quickType").value || "غير محدد";
       const time = document.getElementById("quickTime").value || "";
       const date = document.getElementById("quickDate").value || dateInput.value;
       const came = document.getElementById("quickCame").checked;
 
-      /* تكوين جلسة التمرين */
+      /* جلسة التمرين */
       const newSession = {
         day : new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
         date,
@@ -207,26 +205,22 @@
         came
       };
 
+      /* إذا لم يكن اللاعب مُسجَّلاً، ننشئ بطاقة جديدة حتى لو لم يُكتب اسم */
       try {
-        /* ❶ إذا لم يُختَر لاعب واسمٌ متاح → ننشئ بطاقة جديدة تلقائياً */
         if (!id) {
-          if (!name) {
-            alert("أدخل اسم اللاعب أو اختر من القائمة.");
-            return;
-          }
-          id = Date.now().toString();           // مُعرِّف جديد
-          await setDoc(doc(db, "players", id), {
-            id,
-            name,
-            phone       : "",
+          const playerId = Date.now().toString();
+          await setDoc(doc(db, "players", playerId), {
+            id      : playerId,
+            name    : name || "بدون اسم",
+            phone   : "",
             subscription: "",
-            height      : "",
-            weight      : "",
-            age         : "",
-            attendance  : [newSession]
+            height  : "",
+            weight  : "",
+            age     : "",
+            attendance: [newSession]
           });
+          id = playerId;       // حتى يظهر مباشرة في القائمة
         } else {
-          /* ❷ لاعب موجود: نضيف الجلسة لسجله */
           const ref  = doc(db, "players", id);
           const snap = await getDoc(ref);
           if (!snap.exists()) { alert("اللاعب غير موجود."); return; }
@@ -237,14 +231,14 @@
           await updateDoc(ref, { attendance: data.attendance });
         }
 
-        /* إنعاش الواجهة */
+        /* تحديث الواجهة */
         dateInput.value = date;
         renderByDate();
-        initPlayerOptions();   // قد يكون أُضيف لاعب جديد
+        initPlayerOptions();
         alert("✅ تم إضافة التمرين.");
       } catch (e) {
         console.error(e);
-        alert("تعذر إضافة التمرين – تحقق من الاتصال أو صلاحيات قاعدة البيانات.");
+        alert("تعذر إضافة التمرين – تحقّق من الاتصال أو صلاحيات قاعدة البيانات.");
       }
     });
 
