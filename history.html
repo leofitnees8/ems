@@ -20,94 +20,104 @@
 
   <script type="module">
     import { db } from './firebase.js';
-    import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      collection, getDocs, doc, setDoc, deleteDoc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const archivedList = document.getElementById("archivedList");
     const searchInput  = document.getElementById("searchInput");
 
     let allPlayers = [];
 
-    /* ============ جلب اللاعبين المؤرشفين ============ */
+    /* ---------- تحميل لاعبي الأرشيف ---------- */
     async function fetchArchivedPlayers() {
-      const snapshot = await getDocs(collection(db, "archivedPlayers"));
-      allPlayers     = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const snap = await getDocs(collection(db, "archivedPlayers"));
+      allPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderArchived(allPlayers);
     }
 
-    /* ============ عرض البطاقات ============ */
+    /* ---------- بناء البطاقات ---------- */
     function renderArchived(players) {
-      const query = searchInput.value.toLowerCase();
+      const q = searchInput.value.toLowerCase();
       archivedList.innerHTML = "";
 
-      const filtered = players.filter(p => p.name && p.name.toLowerCase().includes(query));
-
-      if (filtered.length === 0) {
+      const shown = players.filter(p => p.name && p.name.toLowerCase().includes(q));
+      if (!shown.length) {
         archivedList.innerHTML = '<p class="text-gray-600">لا يوجد لاعبين مؤرشفين حالياً.</p>';
         return;
       }
 
-      filtered.forEach(player => {
+      shown.forEach(p => {
         const card = document.createElement("div");
         card.className = "bg-gray-50 p-4 border rounded-xl shadow-sm";
 
-        const subList = (player.subscriptions || []).map(
-          s => `<li>${s.date} - ${s.type} تمرين</li>`).join("");
-        const attList = (player.attendance || []).map(
-          a => `<li>${a.date} ${a.time} - ${a.type} - ${a.came ? "✅" : "❌"}</li>`).join("");
+        const subs = (p.subscriptions || [])
+          .map(s => `<li>${s.date} - ${s.type} تمرين</li>`).join("");
+        const atts = (p.attendance || [])
+          .map(a => `<li>${a.date} ${a.time} - ${a.type} - ${a.came ? "✅" : "❌"}</li>`).join("");
 
         card.innerHTML = `
-          <h2 class="text-xl font-bold text-gray-800">👤 ${player.name}</h2>
-          <p class="text-gray-600">📞 ${player.phone || "-"} | 🎂 ${player.age || "-"} سنة</p>
+          <h2 class="text-xl font-bold text-gray-800">👤 ${p.name}</h2>
+          <p class="text-gray-600">📞 ${p.phone || "-"} | 🎂 ${p.age || "-"} سنة</p>
 
           <div class="mt-2">
             <p class="font-semibold text-blue-700">الاشتراكات:</p>
-            <ul class="list-disc pl-5 text-sm text-gray-700">${subList}</ul>
+            <ul class="list-disc pl-5 text-sm text-gray-700">${subs}</ul>
           </div>
 
           <div class="mt-2">
             <p class="font-semibold text-blue-700">سجل الحضور:</p>
-            <ul class="list-disc pl-5 text-sm text-gray-700">${attList}</ul>
+            <ul class="list-disc pl-5 text-sm text-gray-700">${atts}</ul>
           </div>
 
           <div class="mt-4 flex gap-2">
-            <button onclick="viewCard('${player.id}')" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</button>
-            <button onclick="restore('${player.id}')"   class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
+            <button onclick="viewCard('${p.id}')" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</button>
+            <button onclick="restore('${p.id}')"  class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
           </div>
         `;
         archivedList.appendChild(card);
       });
     }
 
-    /* ============ فتح كرت اللاعب ============ */
+    /* ---------- عرض الكرت ---------- */
     async function viewCard(id) {
-      // إذا لم يكن اللاعب موجودًا في players ننقله مؤقتًا ثم نفتح الكرت
-      const playersRef = doc(db, "players", id);
-      const snapPlayer = await getDoc(playersRef);
+      try {
+        const liveRef = doc(db, "players", id);
+        let liveSnap  = await getDoc(liveRef);
 
-      if (!snapPlayer.exists()) {
-        const archivedRef = doc(db, "archivedPlayers", id);
-        const archivedSnap = await getDoc(archivedRef);
-        if (!archivedSnap.exists()) return;
+        // إذا لم يكن في players انسخه مؤقتاً
+        if (!liveSnap.exists()) {
+          const archRef = doc(db, "archivedPlayers", id);
+          const archSnap = await getDoc(archRef);
+          if (!archSnap.exists()) return alert("اللاعب غير موجود في الأرشيف!");
 
-        // حفظ نسخة في مجموعة players (لا نحذف من الأرشيف)
-        await setDoc(playersRef, archivedSnap.data());
+          await setDoc(liveRef, { ...archSnap.data(), id });   // ← نسخة مؤقتة
+          liveSnap = await getDoc(liveRef);                    // تأكيد النسخ
+          if (!liveSnap.exists()) throw new Error("فشل إنشاء نسخة مؤقتة");
+        }
+
+        // فتح صفحة الكرت
+        window.location.href = `player.html?id=${id}`;
+      } catch (e) {
+        console.error(e);
+        alert("تعذر فتح كرت اللاعب");
       }
-
-      // فتح صفحة الكرت
-      window.location.href = `player.html?id=${id}`;
     }
     window.viewCard = viewCard;
 
-    /* ============ استرجاع اللاعب ============ */
+    /* ---------- استرجاع اللاعب نهائياً ---------- */
     async function restore(id) {
+      if (!confirm("استرجاع هذا اللاعب إلى القائمة الرئيسية؟")) return;
       try {
-        const archivedRef = doc(db, "archivedPlayers", id);
-        const snap = await getDoc(archivedRef);
-        if (!snap.exists()) return;
+        const archRef = doc(db, "archivedPlayers", id);
+        const snap    = await getDoc(archRef);
+        if (!snap.exists()) return alert("اللاعب غير موجود في الأرشيف");
 
-        await setDoc(doc(db, "players", id), snap.data()); // نسخ إلى players
-        await deleteDoc(archivedRef);                      // حذف من الأرشيف
-        window.location.href = "index.html";               // رجوع للقائمة الرئيسية
+        await setDoc(doc(db, "players", id), { ...snap.data(), id }); // نسخ دائم
+        await deleteDoc(archRef);                                     // حذف من الأرشيف
+
+        // إعادة التوجيه بعد التأكد
+        window.location.href = "index.html";
       } catch (e) {
         console.error(e);
         alert("تعذر استرجاع اللاعب");
@@ -115,10 +125,10 @@
     }
     window.restore = restore;
 
-    /* ============ بحث فوري ============ */
+    /* ---------- بحث فوري ---------- */
     searchInput.addEventListener("input", () => renderArchived(allPlayers));
 
-    /* ============ تهيئة ============ */
+    /* ---------- تهيئة ---------- */
     fetchArchivedPlayers();
   </script>
 </body>
