@@ -3,7 +3,7 @@
 <head>
   <script type="module" src="firebase.js"></script>
   <meta charset="UTF-8">
-  <title>אימונים היום - تمارين اليوم</title>
+  <title>אימונים اليوم - تمارين اليوم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -20,7 +20,7 @@
         <option value="">📂 كل الأنواع</option>
         <option value="אימון מוטאבוליזים">אימון מוטאבוליזים</option>
         <option value="אימון כוח">אימון כוח</option>
-        <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
+        <option value="אימון רישון 50 שח">אימון رישון 50 שח</option>
       </select>
       <input type="date" id="datePicker" class="p-2 border rounded">
       <div class="flex flex-wrap gap-2 justify-center w-full">
@@ -38,7 +38,7 @@
     <div class="bg-blue-50 p-4 rounded-xl shadow mt-4">
       <h3 class="text-lg font-bold mb-2">➕ إضافة تمرين</h3>
       <div class="grid md:grid-cols-4 gap-2">
-        <input id="nameSearch" placeholder="🔍 اسم اللاعب (اختياري)" class="p-2 border rounded col-span-2">
+        <input id="nameSearch" placeholder="🔍 اسم أو رقم اللاعب (اختياري)" class="p-2 border rounded col-span-2">
         <select id="playerSelect" class="p-2 border rounded col-span-2"></select>
 
         <select id="quickType" class="p-2 border rounded">
@@ -58,7 +58,7 @@
           <input type="time" id="quickTime" class="p-2 border rounded w-full">
         </div>
 
-        <!-- تم ضبطه على مُؤشَّر افتراضي ✔ -->
+        <!-- مؤشر افتراضي ✔ -->
         <label class="flex items-center gap-2">
           <input type="checkbox" id="quickCame" checked>
           <span>✅ أتى</span>
@@ -169,15 +169,21 @@
 
     document.getElementById("nameSearch").addEventListener("input", filterPlayerOptions);
 
+    /* ===== البحث بالاسم أو برقم الهاتف ===== */
     async function filterPlayerOptions() {
-      const query    = document.getElementById("nameSearch").value.toLowerCase();
+      const rawQuery = document.getElementById("nameSearch").value.toLowerCase();
+      const digitsQ  = rawQuery.replace(/\D/g, "");              // أرقام فقط
       const select   = document.getElementById("playerSelect");
+
       const snapshot = await getDocs(collection(db, "players"));
       const players  = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       select.innerHTML = '<option value="">— اختر لاعباً —</option>';
+
       players.forEach(p => {
-        if (p.name.toLowerCase().includes(query)) {
+        const nameMatch  = (p.name  || "").toLowerCase().includes(rawQuery);
+        const phoneMatch = digitsQ && (p.phone || "").replace(/\D/g, "").includes(digitsQ);
+        if (nameMatch || phoneMatch) {
           const opt = document.createElement("option");
           opt.value = p.id;
           opt.textContent = p.name;
