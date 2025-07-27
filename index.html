@@ -144,6 +144,10 @@
       renderPlayers();
     });
 
+    /* === التعديل البسيط: تحديث القائمة أثناء الكتابة === */
+    document.getElementById("searchInput").addEventListener("input", renderPlayers);
+    /* =================================================== */
+
     function logout() {
       localStorage.removeItem("loggedIn");
       window.location.href = "login.html";
