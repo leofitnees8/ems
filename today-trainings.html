@@ -20,7 +20,7 @@
         <option value="">📂 كل الأنواع</option>
         <option value="אימון אישי">אימון אישי</option>
         <option value="אימון כוח">אימון כוח</option>
-        <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
+        <option value="אימון رישון 50 שח">אימון רישון 50 שח</option>
       </select>
       <input type="date" id="datePicker" class="p-2 border rounded">
       <div class="flex flex-wrap gap-2 justify-center w-full">
@@ -48,12 +48,13 @@
           <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
         </select>
 
-        <!-- التاريخ الجديد -->
+        <!-- التاريخ -->
         <div>
           <label for="quickDate" class="block text-sm font-medium text-gray-700 mb-1">📅 التاريخ</label>
           <input type="date" id="quickDate" class="p-2 border rounded w-full">
         </div>
 
+        <!-- الوقت -->
         <div>
           <label for="quickTime" class="block text-sm font-medium text-gray-700 mb-1">⌚️ الوقت</label>
           <input type="time" id="quickTime" class="p-2 border rounded w-full">
@@ -74,12 +75,14 @@
 
   <script type="module">
     import { db } from './firebase.js';
-    import { getDocs, collection, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getDocs, collection, doc, getDoc, updateDoc, setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const container = document.getElementById("todayList");
     const dateInput = document.getElementById("datePicker");
     const quickDate = document.getElementById("quickDate");
-    const today = new Date();
+    const today     = new Date();
     dateInput.value = quickDate.value = today.toISOString().split("T")[0];
 
     /* ===== أزرار تغيير اليوم ===== */
@@ -101,13 +104,13 @@
       renderByDate();
     });
 
-    /* ===== عرض التمارين حسب التاريخ ===== */
+    /* ===== عرض التمارين ===== */
     async function renderByDate() {
       const selected   = dateInput.value;
       const typeFilter = document.getElementById("typeFilter").value;
 
       const snapshot = await getDocs(collection(db, "players"));
-      const players  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const players  = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       const sessions = [];
       players.forEach(player => {
@@ -134,7 +137,7 @@
             <div class="bg-gray-50 p-4 border rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-center gap-3">
               <div>
                 <p class="text-lg font-bold text-gray-800">👤 ${item.name}</p>
-                <p class="text-sm text-gray-600">📅 ${formatDate(item.date)} | ⏰ ${item.time} | 🏷️ ${item.type}</p>
+                <p class="text-sm text-gray-600">📅 ${formatDate(item.date)} | ⏰ ${item.time || "-"} | 🏷️ ${item.type || "-"}</p>
               </div>
               <div class="flex items-center gap-3">
                 <span class="text-${item.came ? 'green' : 'red'}-600 text-sm">${item.came ? '✅ أتى' : '❌ لم يأتِ'}</span>
@@ -150,11 +153,11 @@
       return `${day} - ${dateString}`;
     }
 
-    /* ===== ملء قائمة اللاعبين في النموذج ===== */
+    /* ===== تعبئة قائمة اللاعبين ===== */
     async function initPlayerOptions() {
       const select   = document.getElementById("playerSelect");
       const snapshot = await getDocs(collection(db, "players"));
-      const players  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const players  = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       select.innerHTML = "";
       players.forEach(p => {
@@ -171,7 +174,7 @@
       const query    = document.getElementById("nameSearch").value.toLowerCase();
       const select   = document.getElementById("playerSelect");
       const snapshot = await getDocs(collection(db, "players"));
-      const players  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const players  = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
       select.innerHTML = "";
       players.forEach(p => {
@@ -184,45 +187,68 @@
       });
     }
 
-    /* ===== إضافة تمرين جديد ===== */
+    /* ===== إضافة تمرين (بدون قيود صارمة) ===== */
     document.getElementById("saveBtn").addEventListener("click", async () => {
-      const id   = document.getElementById("playerSelect").value;
-      const type = document.getElementById("quickType").value;
-      const time = document.getElementById("quickTime").value;
-      const date = document.getElementById("quickDate").value;
+      let   id   = document.getElementById("playerSelect").value;
+      const name = document.getElementById("nameSearch").value.trim();
+
+      /* قيم افتراضية في حال تركها المستخدم فارغة */
+      const type = document.getElementById("quickType").value || "غير محدد";
+      const time = document.getElementById("quickTime").value || "";
+      const date = document.getElementById("quickDate").value || dateInput.value;
       const came = document.getElementById("quickCame").checked;
 
-      if (!id || !type || !time || !date)
-        return alert("يرجى تعبئة جميع الحقول بما فيها التاريخ.");
+      /* تكوين جلسة التمرين */
+      const newSession = {
+        day : new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
+        date,
+        time,
+        type,
+        came
+      };
 
       try {
-        const ref  = doc(db, "players", id);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) return alert("اللاعب غير موجود");
+        /* ❶ إذا لم يُختَر لاعب واسمٌ متاح → ننشئ بطاقة جديدة تلقائياً */
+        if (!id) {
+          if (!name) {
+            alert("أدخل اسم اللاعب أو اختر من القائمة.");
+            return;
+          }
+          id = Date.now().toString();           // مُعرِّف جديد
+          await setDoc(doc(db, "players", id), {
+            id,
+            name,
+            phone       : "",
+            subscription: "",
+            height      : "",
+            weight      : "",
+            age         : "",
+            attendance  : [newSession]
+          });
+        } else {
+          /* ❷ لاعب موجود: نضيف الجلسة لسجله */
+          const ref  = doc(db, "players", id);
+          const snap = await getDoc(ref);
+          if (!snap.exists()) { alert("اللاعب غير موجود."); return; }
 
-        const data = snap.data();
-        data.attendance = data.attendance || [];
-        data.attendance.push({
-          day : new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
-          date,
-          time,
-          type,
-          came
-        });
+          const data = snap.data();
+          data.attendance = data.attendance || [];
+          data.attendance.push(newSession);
+          await updateDoc(ref, { attendance: data.attendance });
+        }
 
-        await updateDoc(ref, { attendance: data.attendance });
-
-        /* حدّث التاريخ المعروض ليتوافق مع التاريخ المُضاف */
+        /* إنعاش الواجهة */
         dateInput.value = date;
         renderByDate();
-        alert("✅ تم إضافة التمرين للاعب");
+        initPlayerOptions();   // قد يكون أُضيف لاعب جديد
+        alert("✅ تم إضافة التمرين.");
       } catch (e) {
         console.error(e);
-        alert("تعذر إضافة التمرين");
+        alert("تعذر إضافة التمرين – تحقق من الاتصال أو صلاحيات قاعدة البيانات.");
       }
     });
 
-    /* ===== تبديل حالة أتى / لم يأتِ ===== */
+    /* ===== تبديل حالة الحضور ===== */
     async function toggleCame(playerId, idx) {
       try {
         const ref  = doc(db, "players", playerId);
