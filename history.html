@@ -23,23 +23,23 @@
     import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const archivedList = document.getElementById("archivedList");
-    const searchInput = document.getElementById("searchInput");
+    const searchInput  = document.getElementById("searchInput");
 
     let allPlayers = [];
 
+    /* ============ جلب اللاعبين المؤرشفين ============ */
     async function fetchArchivedPlayers() {
       const snapshot = await getDocs(collection(db, "archivedPlayers"));
-      allPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      allPlayers     = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       renderArchived(allPlayers);
     }
 
+    /* ============ عرض البطاقات ============ */
     function renderArchived(players) {
       const query = searchInput.value.toLowerCase();
       archivedList.innerHTML = "";
 
-      const filtered = players.filter(player =>
-        player.name && player.name.toLowerCase().includes(query)
-      );
+      const filtered = players.filter(p => p.name && p.name.toLowerCase().includes(query));
 
       if (filtered.length === 0) {
         archivedList.innerHTML = '<p class="text-gray-600">لا يوجد لاعبين مؤرشفين حالياً.</p>';
@@ -50,50 +50,75 @@
         const card = document.createElement("div");
         card.className = "bg-gray-50 p-4 border rounded-xl shadow-sm";
 
-        const subList = (player.subscriptions || []).map(sub => `
-          <li>${sub.date} - ${sub.type} تمرين</li>
-        `).join("");
-
-        const attList = (player.attendance || []).map(att => `
-          <li>${att.date} ${att.time} - ${att.type} - ${att.came ? "✅" : "❌"}</li>
-        `).join("");
+        const subList = (player.subscriptions || []).map(
+          s => `<li>${s.date} - ${s.type} تمرين</li>`).join("");
+        const attList = (player.attendance || []).map(
+          a => `<li>${a.date} ${a.time} - ${a.type} - ${a.came ? "✅" : "❌"}</li>`).join("");
 
         card.innerHTML = `
           <h2 class="text-xl font-bold text-gray-800">👤 ${player.name}</h2>
           <p class="text-gray-600">📞 ${player.phone || "-"} | 🎂 ${player.age || "-"} سنة</p>
+
           <div class="mt-2">
             <p class="font-semibold text-blue-700">الاشتراكات:</p>
             <ul class="list-disc pl-5 text-sm text-gray-700">${subList}</ul>
           </div>
+
           <div class="mt-2">
             <p class="font-semibold text-blue-700">سجل الحضور:</p>
             <ul class="list-disc pl-5 text-sm text-gray-700">${attList}</ul>
           </div>
+
           <div class="mt-4 flex gap-2">
-            <a href="player.html?id=${player.id}" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</a>
-            <button onclick="restore('${player.id}')" class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
+            <button onclick="viewCard('${player.id}')" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</button>
+            <button onclick="restore('${player.id}')"   class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
           </div>
         `;
-
         archivedList.appendChild(card);
       });
     }
 
-    async function restore(id) {
-      const archivedRef = doc(db, "archivedPlayers", id);
-      const playerSnap = await getDoc(archivedRef);
-      if (!playerSnap.exists()) return;
-      const player = playerSnap.data();
+    /* ============ فتح كرت اللاعب ============ */
+    async function viewCard(id) {
+      // إذا لم يكن اللاعب موجودًا في players ننقله مؤقتًا ثم نفتح الكرت
+      const playersRef = doc(db, "players", id);
+      const snapPlayer = await getDoc(playersRef);
 
-      await setDoc(doc(db, "players", id), player);
-      await deleteDoc(archivedRef);
-      fetchArchivedPlayers();
+      if (!snapPlayer.exists()) {
+        const archivedRef = doc(db, "archivedPlayers", id);
+        const archivedSnap = await getDoc(archivedRef);
+        if (!archivedSnap.exists()) return;
+
+        // حفظ نسخة في مجموعة players (لا نحذف من الأرشيف)
+        await setDoc(playersRef, archivedSnap.data());
+      }
+
+      // فتح صفحة الكرت
+      window.location.href = `player.html?id=${id}`;
     }
+    window.viewCard = viewCard;
 
-    searchInput.addEventListener("input", () => {
-      renderArchived(allPlayers);
-    });
+    /* ============ استرجاع اللاعب ============ */
+    async function restore(id) {
+      try {
+        const archivedRef = doc(db, "archivedPlayers", id);
+        const snap = await getDoc(archivedRef);
+        if (!snap.exists()) return;
 
+        await setDoc(doc(db, "players", id), snap.data()); // نسخ إلى players
+        await deleteDoc(archivedRef);                      // حذف من الأرشيف
+        window.location.href = "index.html";               // رجوع للقائمة الرئيسية
+      } catch (e) {
+        console.error(e);
+        alert("تعذر استرجاع اللاعب");
+      }
+    }
+    window.restore = restore;
+
+    /* ============ بحث فوري ============ */
+    searchInput.addEventListener("input", () => renderArchived(allPlayers));
+
+    /* ============ تهيئة ============ */
     fetchArchivedPlayers();
   </script>
 </body>
