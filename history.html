@@ -29,14 +29,14 @@
 
     let allPlayers = [];
 
-    /* ---------- تحميل لاعبي الأرشيف ---------- */
+    /* ===== تحميل لاعبي الأرشيف ===== */
     async function fetchArchivedPlayers() {
       const snap = await getDocs(collection(db, "archivedPlayers"));
       allPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderArchived(allPlayers);
     }
 
-    /* ---------- بناء البطاقات ---------- */
+    /* ===== بناء البطاقات ===== */
     function renderArchived(players) {
       const q = searchInput.value.toLowerCase();
       archivedList.innerHTML = "";
@@ -71,64 +71,77 @@
           </div>
 
           <div class="mt-4 flex gap-2">
-            <button onclick="viewCard('${p.id}')" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</button>
-            <button onclick="restore('${p.id}')"  class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">🔄 استرجاع اللاعب</button>
+            <!-- نستدعي viewCard ثم نمنع الرابط الافتراضي -->
+            <a href="#" onclick="viewCard('${p.id}');return false;"
+               class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600">👁️ عرض الكرت</a>
+
+            <button onclick="restore('${p.id}')"
+                    class="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700">
+              🔄 استرجاع اللاعب
+            </button>
           </div>
         `;
         archivedList.appendChild(card);
       });
     }
 
-    /* ---------- عرض الكرت ---------- */
+    /* ===== عرض الكرت ===== */
     async function viewCard(id) {
       try {
         const liveRef = doc(db, "players", id);
         let liveSnap  = await getDoc(liveRef);
 
-        // إذا لم يكن في players انسخه مؤقتاً
+        /* إذا لم يكن في players -> انسخه مؤقتاً من الأرشيف */
         if (!liveSnap.exists()) {
           const archRef = doc(db, "archivedPlayers", id);
           const archSnap = await getDoc(archRef);
-          if (!archSnap.exists()) return alert("اللاعب غير موجود في الأرشيف!");
-
-          await setDoc(liveRef, { ...archSnap.data(), id });   // ← نسخة مؤقتة
-          liveSnap = await getDoc(liveRef);                    // تأكيد النسخ
-          if (!liveSnap.exists()) throw new Error("فشل إنشاء نسخة مؤقتة");
+          if (!archSnap.exists()) {
+            alert("اللاعب غير موجود في الأرشيف.");
+            return;
+          }
+          await setDoc(liveRef, { ...archSnap.data(), id });   // نسخة مؤقتة
+          liveSnap = await getDoc(liveRef);
+          if (!liveSnap.exists()) throw new Error("فشل حفظ النسخة المؤقتة");
         }
 
-        // فتح صفحة الكرت
+        /* افتح صفحة اللاعب */
         window.location.href = `player.html?id=${id}`;
-      } catch (e) {
-        console.error(e);
-        alert("تعذر فتح كرت اللاعب");
+      } catch (err) {
+        console.error(err);
+        alert("تعذر فتح كرت اللاعب – تحقّق من صلاحيات قاعدة البيانات.");
       }
     }
     window.viewCard = viewCard;
 
-    /* ---------- استرجاع اللاعب نهائياً ---------- */
+    /* ===== استرجاع اللاعب ===== */
     async function restore(id) {
       if (!confirm("استرجاع هذا اللاعب إلى القائمة الرئيسية؟")) return;
+
       try {
         const archRef = doc(db, "archivedPlayers", id);
         const snap    = await getDoc(archRef);
-        if (!snap.exists()) return alert("اللاعب غير موجود في الأرشيف");
+        if (!snap.exists()) {
+          alert("اللاعب غير موجود في الأرشيف.");
+          return;
+        }
 
-        await setDoc(doc(db, "players", id), { ...snap.data(), id }); // نسخ دائم
-        await deleteDoc(archRef);                                     // حذف من الأرشيف
+        /* نسخ ثم حذف */
+        await setDoc(doc(db, "players", id), { ...snap.data(), id });
+        await deleteDoc(archRef);
 
-        // إعادة التوجيه بعد التأكد
+        /* إعادة التوجيه بعد نجاح العمليتين */
         window.location.href = "index.html";
-      } catch (e) {
-        console.error(e);
-        alert("تعذر استرجاع اللاعب");
+      } catch (err) {
+        console.error(err);
+        alert("تعذر استرجاع اللاعب – تحقّق من صلاحيات قاعدة البيانات.");
       }
     }
     window.restore = restore;
 
-    /* ---------- بحث فوري ---------- */
+    /* ===== بحث فوري ===== */
     searchInput.addEventListener("input", () => renderArchived(allPlayers));
 
-    /* ---------- تهيئة ---------- */
+    /* ===== تحميل مبدئي ===== */
     fetchArchivedPlayers();
   </script>
 </body>
