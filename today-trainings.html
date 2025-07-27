@@ -18,7 +18,7 @@
     <div class="flex flex-wrap gap-2 text-sm items-center">
       <select id="typeFilter" onchange="renderByDate()" class="p-2 border rounded">
         <option value="">📂 كل الأنواع</option>
-        <option value="אימון אישי">אימון אישי</option>
+        <option value="אימון מוטאבוליזים">אימון מוטאבוליזים</option>
         <option value="אימון כוח">אימון כוח</option>
         <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
       </select>
@@ -43,9 +43,9 @@
 
         <select id="quickType" class="p-2 border rounded">
           <option value="">نوع التمرين</option>
-          <option value="אימון אישי">אימון אישי</option>
+          <option value="אימון מוטאבוליזים">אימון מוטאבولיזים</option>
           <option value="אימון כוח">אימון כוח</option>
-          <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
+          <option value="אימון רישון 50 שח">אימון رישון 50 שח</option>
         </select>
 
         <div>
@@ -58,8 +58,9 @@
           <input type="time" id="quickTime" class="p-2 border rounded w-full">
         </div>
 
+        <!-- تم ضبطه على مُؤشَّر افتراضي ✔ -->
         <label class="flex items-center gap-2">
-          <input type="checkbox" id="quickCame">
+          <input type="checkbox" id="quickCame" checked>
           <span>✅ أتى</span>
         </label>
 
@@ -190,13 +191,11 @@
       let   id   = document.getElementById("playerSelect").value;
       const name = document.getElementById("nameSearch").value.trim();
 
-      /* قيَم افتراضية عند ترك الحقول فارغة */
       const type = document.getElementById("quickType").value || "غير محدد";
       const time = document.getElementById("quickTime").value || "";
       const date = document.getElementById("quickDate").value || dateInput.value;
-      const came = document.getElementById("quickCame").checked;
+      const came = document.getElementById("quickCame").checked;   // افتراضيًا ✔
 
-      /* جلسة التمرين */
       const newSession = {
         day : new Date(date).toLocaleDateString("ar-EG", { weekday: "long" }),
         date,
@@ -205,9 +204,8 @@
         came
       };
 
-      /* إذا لم يكن اللاعب مُسجَّلاً، ننشئ بطاقة جديدة حتى لو لم يُكتب اسم */
       try {
-        if (!id) {
+        if (!id) {   /* لاعب غير مسجَّل */
           const playerId = Date.now().toString();
           await setDoc(doc(db, "players", playerId), {
             id      : playerId,
@@ -219,7 +217,7 @@
             age     : "",
             attendance: [newSession]
           });
-          id = playerId;       // حتى يظهر مباشرة في القائمة
+          id = playerId;
         } else {
           const ref  = doc(db, "players", id);
           const snap = await getDoc(ref);
@@ -235,14 +233,14 @@
         dateInput.value = date;
         renderByDate();
         initPlayerOptions();
-        alert("✅ تم إضافة التمرين.");
+        alert("✅ تم إضافة التمرين (حالة الحضور: أتى).");
       } catch (e) {
         console.error(e);
         alert("تعذر إضافة التمرين – تحقّق من الاتصال أو صلاحيات قاعدة البيانات.");
       }
     });
 
-    /* ===== تبديل حالة الحضور ===== */
+    /* ===== تبديل حضور ===== */
     async function toggleCame(playerId, idx) {
       try {
         const ref  = doc(db, "players", playerId);
