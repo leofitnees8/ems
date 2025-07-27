@@ -72,13 +72,14 @@
 
         <select id="typeInput" class="p-2 border rounded">
           <option value="">نوع التمرين</option>
-          <option value="אימון כוח">אימון כוח</option>
+          <option value="אימון מוטאבוליזים">אימון מוטאבוליזים</option>
           <option value="אימון רישון 50 שח">אימון רישון 50 שח</option>
           <option value="אימון אישי">אימון אישי</option>
         </select>
 
+        <!-- افتراضيًا ✔ أتى -->
         <label class="flex items-center gap-2">
-          <input type="checkbox" id="cameInput">
+          <input type="checkbox" id="cameInput" checked>
           <span>✅ أتى</span>
         </label>
       </div>
@@ -126,7 +127,7 @@
         const todayIndex  = today.getDay();
         const targetIndex = dayMap[selectedDay];
         let diff = (targetIndex - todayIndex + 7) % 7;
-        if (diff < 2) diff += 7; // ليتجاوز اليوم الحاضر
+        if (diff < 2) diff += 7;
         const targetDate  = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diff);
         dateInput.value   = targetDate.toISOString().split("T")[0];
       });
@@ -153,7 +154,6 @@
       player.attendance    = player.attendance    || [];
       player.subscriptions = player.subscriptions || [];
 
-      /* بيانات أساسية */
       playerInfo.innerHTML = `
         <div>👤 الاسم: ${player.name   || "غير معروف"}</div>
         <div>📞 الهاتف: ${player.phone  || "-"}</div>
@@ -162,7 +162,6 @@
         <div>🎂 العمر:  ${player.age    || "-"}</div>
       `;
 
-      /* قائمة الاشتراكات مع زر حذف */
       subsList.innerHTML = `
         ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
       ` + player.subscriptions.map((sub, i) => `
@@ -172,7 +171,6 @@
         </li>
       `).join("");
 
-      /* حساب التقدم */
       const total     = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
       const attended  = player.attendance.filter(a => a.came).length;
       progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
@@ -180,15 +178,15 @@
       showTable();
     }
 
-    /* =============== تلوين نوع التمرين في الجدول =============== */
+    /* =============== ألوان الصفوف =============== */
     function getTypeColor(type) {
-      if (type === "אימון מוטאבוליזים")         return "bg-blue-50 text-blue-700";
-      if (type === "אימון רישון 50 שח") return "bg-yellow-50 text-yellow-700";
-      if (type === "אימון אישי")        return "bg-green-50 text-green-700";
+      if (type === "אימון מוטאבוליזים") return "bg-blue-50 text-blue-700";
+      if (type === "אימון רישון 50 שח")  return "bg-yellow-50 text-yellow-700";
+      if (type === "אימון אישי")         return "bg-green-50 text-green-700";
       return "bg-gray-100 text-gray-700";
     }
 
-    /* =============== عرض جدول الحضور مع أزرار التبديل والحذف =============== */
+    /* =============== جدول التمارين =============== */
     function showTable() {
       weeklyTable.innerHTML = "";
       player.attendance.forEach((a, i) => {
@@ -201,8 +199,8 @@
           <td>${a.type}</td>
           <td>${a.came ? "✅ أتى" : "❌ لم يأتي"}</td>
           <td class="flex gap-2 justify-center">
-            <button onclick="toggleAttendance(${i})" class="text-blue-600 hover:underline text-sm" title="تبديل الحضور">تبديل</button>
-            <button onclick="deleteTraining(${i})"  class="text-red-600 hover:underline text-sm"  title="حذف التمرين">حذف</button>
+            <button onclick="toggleAttendance(${i})" class="text-blue-600 hover:underline text-sm">تبديل</button>
+            <button onclick="deleteTraining(${i})"  class="text-red-600 hover:underline text-sm">حذف</button>
           </td>
         `;
         weeklyTable.appendChild(row);
@@ -224,11 +222,11 @@
       }
 
       const newTraining = {
-        day:  dayName,
+        day : dayName,
         date: dateInput.value,
         time: timeInput.value,
         type: typeInput.value,
-        came: cameInput.checked
+        came: cameInput.checked   // افتراضيًا ✔
       };
 
       player.attendance.push(newTraining);
@@ -241,54 +239,41 @@
       dateInput.value = "";
       timeInput.value = "";
       typeInput.value = "";
-      cameInput.checked = false;
+      cameInput.checked = true;   // يبقى ✔ افتراضيًا
     };
 
-    /* =============== دوال الاشتراك والحذف والتبديل ================= */
-
-    /** إضافة اشتراك **/
+    /* =============== وظائف إضافية =============== */
     function addSubscription() {
-      const choice = prompt(
-        "اختر رقم الاشتراك المطلوب:\n1) 15 تمرين - 1500 شيكل\n2) 35 تمرين - 3000 شيكل\n3) 50 تمرين - 4000 شيكل"
-      );
-      let typeValue;
-      if (choice === "1" || choice === "15")      typeValue = "15";
-      else if (choice === "2" || choice === "35") typeValue = "35";
-      else if (choice === "3" || choice === "50") typeValue = "50";
-      else return; // إلغاء أو قيمة غير صحيحة
-
-      const today = new Date().toLocaleDateString('he-IL');
-      const newSub = { date: today, type: typeValue };
-
+      const choice = prompt("اختر:\n1) 15\n2) 35\n3) 50");
+      const map = { "1":"15","15":"15","2":"35","35":"35","3":"50","50":"50" };
+      if (!map[choice]) return;
+      const newSub = { date: new Date().toLocaleDateString('he-IL'), type: map[choice] };
       player.subscriptions.push(newSub);
       updateDoc(playerRef, { subscriptions: player.subscriptions }).then(showInfo);
     }
     window.addSubscription = addSubscription;
 
-    /** حذف اشتراك **/
-    function deleteSubscription(idx) {
-      if (!confirm("هل أنت متأكد من حذف هذا الاشتراك؟")) return;
-      player.subscriptions.splice(idx, 1);
-      updateDoc(playerRef, { subscriptions: player.subscriptions }).then(showInfo);
+    function deleteSubscription(i){
+      if (!confirm("حذف الاشتراك؟")) return;
+      player.subscriptions.splice(i,1);
+      updateDoc(playerRef,{subscriptions:player.subscriptions}).then(showInfo);
     }
     window.deleteSubscription = deleteSubscription;
 
-    /** تبديل حالة الحضور **/
-    function toggleAttendance(idx) {
-      player.attendance[idx].came = !player.attendance[idx].came;
-      updateDoc(playerRef, { attendance: player.attendance }).then(showInfo);
+    function toggleAttendance(i){
+      player.attendance[i].came=!player.attendance[i].came;
+      updateDoc(playerRef,{attendance:player.attendance}).then(showInfo);
     }
     window.toggleAttendance = toggleAttendance;
 
-    /** حذف تمرين **/
-    function deleteTraining(idx) {
-      if (!confirm("هل أنت متأكد من حذف هذا التمرين؟")) return;
-      player.attendance.splice(idx, 1);
-      updateDoc(playerRef, { attendance: player.attendance }).then(showInfo);
+    function deleteTraining(i){
+      if(!confirm("حذف التمرين؟"))return;
+      player.attendance.splice(i,1);
+      updateDoc(playerRef,{attendance:player.attendance}).then(showInfo);
     }
     window.deleteTraining = deleteTraining;
 
-    /* =============== تحميل البيانات الأولية =============== */
+    /* =============== تحميل البيانات =============== */
     showInfo();
   </script>
 </body>
