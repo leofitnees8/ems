@@ -154,14 +154,26 @@
       player.attendance    = player.attendance    || [];
       player.subscriptions = player.subscriptions || [];
 
+      /* -------- بيانات اللاعب مع زر تعديل -------- */
       playerInfo.innerHTML = `
-        <div>👤 الاسم: ${player.name   || "غير معروف"}</div>
-        <div>📞 الهاتف: ${player.phone  || "-"}</div>
-        <div>📏 الطول:  ${player.height || "-"} سم</div>
-        <div>⚖️ الوزن:  ${player.weight || "-"} كغ</div>
-        <div>🎂 العمر:  ${player.age    || "-"}</div>
+        <div>👤 الاسم: <span>${player.name || "غير معروف"}</span>
+          <button onclick="editField('name')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
+        </div>
+        <div>📞 الهاتف: <span>${player.phone || "-"}</span>
+          <button onclick="editField('phone')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
+        </div>
+        <div>📏 الطول: <span>${player.height || "-"}</span> سم
+          <button onclick="editField('height')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
+        </div>
+        <div>⚖️ الوزن: <span>${player.weight || "-"}</span> كغ
+          <button onclick="editField('weight')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
+        </div>
+        <div>🎂 العمر: <span>${player.age || "-"}</span>
+          <button onclick="editField('age')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
+        </div>
       `;
 
+      /* -------- الاشتراكات -------- */
       subsList.innerHTML = `
         ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
       ` + player.subscriptions.map((sub, i) => `
@@ -171,12 +183,33 @@
         </li>
       `).join("");
 
+      /* -------- التقدم -------- */
       const total     = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
       const attended  = player.attendance.filter(a => a.came).length;
       progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
 
       showTable();
     }
+
+    /* =============== تعديل حقل (اسم، هاتف، إلخ) =============== */
+    function editField(field) {
+      const labels = { name:"الاسم", phone:"الهاتف", height:"الطول", weight:"الوزن", age:"العمر" };
+      const current = player[field] ?? "";
+      const value = prompt(`أدخل ${labels[field]} الجديد:`, current);
+      if (value === null) return;           // ألغى
+      const trimmed = value.trim();
+      if (!trimmed) { alert("لا يمكن ترك الحقل فارغًا"); return; }
+
+      let newVal = trimmed;
+      if (['height','weight','age'].includes(field)) {
+        const num = parseInt(trimmed, 10);
+        if (isNaN(num)) { alert("يرجى إدخال رقم صحيح"); return; }
+        newVal = num;
+      }
+
+      updateDoc(playerRef, { [field]: newVal }).then(showInfo);
+    }
+    window.editField = editField;
 
     /* =============== ألوان الصفوف =============== */
     function getTypeColor(type) {
