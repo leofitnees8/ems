@@ -48,7 +48,7 @@
 
   <script type="module">
     import { db } from './firebase.js';
-    import { collection, getDocs, doc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { collection, getDocs, doc, deleteDoc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const nameInput  = document.getElementById("playerName");
     const phoneInput = document.getElementById("playerPhone");
@@ -69,7 +69,10 @@
         li.className = "flex justify-between items-center bg-blue-100 rounded px-3 py-2";
         li.innerHTML = `
           <div class="flex flex-col">
-            <a href="player.html?id=${p.id}" class="font-medium hover:underline">👤 ${p.name || "بدون اسم"}</a>
+            <div class="flex items-center gap-1">
+              <a href="player.html?id=${p.id}" class="font-medium hover:underline">👤 ${p.name || "بدون اسم"}</a>
+              <button onclick="editPlayerName('${p.id}')" class="text-blue-600 hover:underline text-xs">تعديل</button>
+            </div>
             ${p.phone ? `<a href="https://wa.me/${formatWhatsApp(p.phone)}" target="_blank" class="text-green-600 text-sm hover:underline mt-1">📱 واتساب</a>` : ""}
             <span class="text-sm text-gray-700">📏 الطول: ${p.height || "-"} سم</span>
             <span class="text-sm text-gray-700">⚖️ الوزن: ${p.weight || "-"} كغ</span>
@@ -80,6 +83,27 @@
         list.appendChild(li);
       });
     }
+
+    /* ============ تعديل اسم اللاعب ============ */
+    async function editPlayerName(id) {
+      try {
+        const ref = doc(db, "players", id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) { alert("اللاعب غير موجود."); return; }
+        const current = snap.data().name || "";
+        const newName = prompt("أدخل الاسم الجديد:", current);
+        if (newName === null) return;                 // إلغاء
+        const trimmed = newName.trim();
+        if (!trimmed) { alert("لا يمكن ترك الاسم فارغًا."); return; }
+
+        await updateDoc(ref, { name: trimmed });
+        renderPlayers();                              // تحديث القائمة
+      } catch (e) {
+        console.error(e);
+        alert("تعذر تعديل الاسم.");
+      }
+    }
+    window.editPlayerName = editPlayerName;
 
     /* ============ أرشفة ثم حذف اللاعب ============ */
     async function archivePlayer(id) {
