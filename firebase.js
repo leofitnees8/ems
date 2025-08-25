@@ -3,16 +3,17 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDnE9S3nZG_5TGxtyqZ5xW-I78IExV1f1E",
+  apiKey: "AIzaSyDnE953ZnG_5TGytxqZ5xW-I78IExV1f1E",
   authDomain: "ems-282f0.firebaseapp.com",
   projectId: "ems-282f0",
-  storageBucket: "ems-282f0.firebasestorage.app",
+  storageBucket: "ems-282f0.appspot.com",
   messagingSenderId: "33075424116",
-  appId: "1:33075424116:web:75708c6962580f450ada21",
-  measurementId: "G-NG7KRQEJLB"
+  appId: "1:33075424116:web:75708c6962580f4580ada21",
+  measurementId: "G-N67RQEJLB"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
-export { db };
+// Export Firestore
+export const db = getFirestore(app);
