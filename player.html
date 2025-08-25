@@ -72,12 +72,11 @@
 
         <select id="typeInput" class="p-2 border rounded">
           <option value="">نوع التمرين</option>
-          <option value="אימון מוטאבוליזים">אימון מוטאבولיזים</option>
+          <option value="אימון מוטאבוליזים">אימון מוטאבוליזים</option>
           <option value="אימון רישון 50 שח">אימון ראשון 50 שח</option>
           <option value="אימון כוח">אימון כוח</option>
         </select>
 
-        <!-- افتراضيًا ✔ أتى -->
         <label class="flex items-center gap-2">
           <input type="checkbox" id="cameInput" checked>
           <span>✅ أتى</span>
@@ -92,7 +91,7 @@
   <!-- سكربت التطبيق -->
   <script type="module">
     import { db } from './firebase.js';
-    import { collection, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { collection, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const playerId = new URLSearchParams(location.search).get("id");
     const playerRef = doc(db, "players", playerId);
@@ -149,7 +148,7 @@
       player = snap.data();
       player.attendance    = player.attendance    || [];
       player.subscriptions = player.subscriptions || [];
-      player.paid          = player.paid || 0; // ✅ جديد
+      player.paid          = player.paid ?? 0; // ✅
 
       playerInfo.innerHTML = `
         <div>👤 الاسم: <span>${player.name || "غير معروف"}</span>
@@ -167,13 +166,13 @@
         <div>🎂 العمر: <span>${player.age || "-"}</span>
           <button onclick="editField('age')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
         </div>
-        <div>💵 المدفوع: <span>${player.paid}</span> شيكل
+        <div>💵 المدفوع: <span>${player.paid ?? 0}</span> شيكل
           <button onclick="editField('paid')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
         </div>
         <div>💰 المتبقي: <span>${
           (player.subscription === "15" ? 1500 :
            player.subscription === "35" ? 3000 :
-           player.subscription === "50" ? 4000 : 0) - player.paid
+           player.subscription === "50" ? 4000 : 0) - (player.paid ?? 0)
         }</span> شيكل</div>
       `;
 
@@ -305,4 +304,4 @@
   </script>
 </body>
 </html>
-
+``
