@@ -72,7 +72,7 @@
 
         <select id="typeInput" class="p-2 border rounded">
           <option value="">نوع التمرين</option>
-          <option value="אימון מוטאבוליזים">אימון מוטאבוליזים</option>
+          <option value="אימון מוטאבוליזים">אימון מוטאבولיזים</option>
           <option value="אימון רישון 50 שח">אימון ראשון 50 שח</option>
           <option value="אימון כוח">אימון כוח</option>
         </select>
@@ -94,7 +94,6 @@
     import { db } from './firebase.js';
     import { collection, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    /* =============== متغيرات عامة =============== */
     const playerId = new URLSearchParams(location.search).get("id");
     const playerRef = doc(db, "players", playerId);
 
@@ -112,17 +111,14 @@
 
     let selectedDay = "";
 
-    /* =============== مساعد لاختيار تاريخ اليوم المختار =============== */
+    /* =============== اختيار يوم تلقائي =============== */
     dayInputButtons.forEach(btn => {
       btn.addEventListener("click", () => {
         selectedDay = btn.dataset.day;
         dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
         btn.classList.add("bg-blue-500", "text-white");
 
-        const dayMap = {
-          'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2,
-          'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6
-        };
+        const dayMap = { 'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الخميس': 4, 'الجمعة': 5, 'السبت': 6 };
         const today       = new Date();
         const todayIndex  = today.getDay();
         const targetIndex = dayMap[selectedDay];
@@ -133,7 +129,7 @@
       });
     });
 
-    /* =============== تحويل قيمة الاشتراك إلى تسمية =============== */
+    /* =============== تسمية الاشتراك =============== */
     function getSubscriptionLabel(value) {
       switch (value) {
         case "15": return "15 تمرين - 1500 شيكل";
@@ -143,7 +139,7 @@
       }
     }
 
-    /* =============== عرض بيانات اللاعب والاشتراكات والحضور =============== */
+    /* =============== عرض بيانات اللاعب =============== */
     async function showInfo() {
       const snap = await getDoc(playerRef);
       if (!snap.exists()) {
@@ -153,8 +149,8 @@
       player = snap.data();
       player.attendance    = player.attendance    || [];
       player.subscriptions = player.subscriptions || [];
+      player.paid          = player.paid || 0; // ✅ جديد
 
-      /* -------- بيانات اللاعب مع زر تعديل -------- */
       playerInfo.innerHTML = `
         <div>👤 الاسم: <span>${player.name || "غير معروف"}</span>
           <button onclick="editField('name')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
@@ -171,9 +167,16 @@
         <div>🎂 العمر: <span>${player.age || "-"}</span>
           <button onclick="editField('age')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
         </div>
+        <div>💵 المدفوع: <span>${player.paid}</span> شيكل
+          <button onclick="editField('paid')" class="text-blue-600 hover:underline text-sm ml-2">تعديل</button>
+        </div>
+        <div>💰 المتبقي: <span>${
+          (player.subscription === "15" ? 1500 :
+           player.subscription === "35" ? 3000 :
+           player.subscription === "50" ? 4000 : 0) - player.paid
+        }</span> شيكل</div>
       `;
 
-      /* -------- الاشتراكات -------- */
       subsList.innerHTML = `
         ${player.subscription ? `<li class="text-gray-700">📌 الاشتراك الأولي: ${getSubscriptionLabel(player.subscription)}</li>` : ""}
       ` + player.subscriptions.map((sub, i) => `
@@ -183,7 +186,6 @@
         </li>
       `).join("");
 
-      /* -------- التقدم -------- */
       const total     = parseInt(player.subscriptions.at(-1)?.type || player.subscription || "0");
       const attended  = player.attendance.filter(a => a.came).length;
       progress.textContent = total ? `✅ تم ${attended} من ${total} تمرين` : "📌 لا يوجد اشتراك مفعل";
@@ -191,17 +193,17 @@
       showTable();
     }
 
-    /* =============== تعديل حقل (اسم، هاتف، إلخ) =============== */
+    /* =============== تعديل أي حقل =============== */
     function editField(field) {
-      const labels = { name:"الاسم", phone:"الهاتف", height:"الطول", weight:"الوزن", age:"العمر" };
+      const labels = { name:"الاسم", phone:"الهاتف", height:"الطول", weight:"الوزن", age:"العمر", paid:"المبلغ المدفوع" };
       const current = player[field] ?? "";
       const value = prompt(`أدخل ${labels[field]} الجديد:`, current);
-      if (value === null) return;           // ألغى
+      if (value === null) return;
       const trimmed = value.trim();
       if (!trimmed) { alert("لا يمكن ترك الحقل فارغًا"); return; }
 
       let newVal = trimmed;
-      if (['height','weight','age'].includes(field)) {
+      if (['height','weight','age','paid'].includes(field)) {
         const num = parseInt(trimmed, 10);
         if (isNaN(num)) { alert("يرجى إدخال رقم صحيح"); return; }
         newVal = num;
@@ -211,7 +213,7 @@
     }
     window.editField = editField;
 
-    /* =============== ألوان الصفوف =============== */
+    /* =============== ألوان الجدول =============== */
     function getTypeColor(type) {
       if (type === "אימון מוטאבוליזים") return "bg-blue-50 text-blue-700";
       if (type === "אימון רישון 50 שח")  return "bg-yellow-50 text-yellow-700";
@@ -240,7 +242,7 @@
       });
     }
 
-    /* =============== إضافة تمرين جديد =============== */
+    /* =============== إضافة تمرين =============== */
     document.getElementById("addTraining").onclick = async () => {
       if (!dateInput.value || !timeInput.value || !typeInput.value) {
         alert("يرجى تعبئة التاريخ والوقت ونوع التمرين.");
@@ -254,28 +256,20 @@
         dayName = dayNames[date.getDay()];
       }
 
-      const newTraining = {
-        day : dayName,
-        date: dateInput.value,
-        time: timeInput.value,
-        type: typeInput.value,
-        came: cameInput.checked   // افتراضيًا ✔
-      };
-
+      const newTraining = { day: dayName, date: dateInput.value, time: timeInput.value, type: typeInput.value, came: cameInput.checked };
       player.attendance.push(newTraining);
       await updateDoc(playerRef, { attendance: player.attendance });
       showInfo();
 
-      /* إعادة تعيين الحقول */
       selectedDay = "";
       dayInputButtons.forEach(b => b.classList.remove("bg-blue-500", "text-white"));
       dateInput.value = "";
       timeInput.value = "";
       typeInput.value = "";
-      cameInput.checked = true;   // يبقى ✔ افتراضيًا
+      cameInput.checked = true;
     };
 
-    /* =============== وظائف إضافية =============== */
+    /* =============== الاشتراكات =============== */
     function addSubscription() {
       const choice = prompt("اختر:\n1) 15\n2) 35\n3) 50");
       const map = { "1":"15","15":"15","2":"35","35":"35","3":"50","50":"50" };
